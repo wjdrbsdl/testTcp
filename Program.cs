@@ -17,6 +17,7 @@ namespace study
             byte[] msg = new byte[8];
             Server server = new Server();
             Client client = new Client();
+            Console.WriteLine("서버 생성은 s 클라 생성은 c 를 입력하세요");
             while (true)
             {
                 string input = Console.ReadLine();
