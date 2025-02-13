@@ -18,8 +18,14 @@ namespace testTcp
         {
             Console.WriteLine("클라 컨넥");
             mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            IPAddress serverAddr = IPAddress.Parse("192.168.0.41");
-            IPEndPoint clientEP = new IPEndPoint(serverAddr, 3333);
+            string parseIP = ParseCurIP.GetLocalIP();
+            if(parseIP == null)
+            {
+                Console.WriteLine("IP 받아오기 실패");
+                return;
+            }
+            IPAddress serverAddr = IPAddress.Parse(parseIP);
+            IPEndPoint clientEP = new IPEndPoint(serverAddr, m_port);
             mainSock.BeginConnect(clientEP, new AsyncCallback(ConnectCallback), mainSock);
         }
         public void Close()
@@ -70,6 +76,7 @@ namespace testTcp
             catch (Exception e)
             {
                 Console.WriteLine("받을거 없음?");
+                Connect();
             }
 
 
