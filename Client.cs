@@ -14,29 +14,38 @@ namespace testTcp
         List<string> textList = new List<string>();
         Socket mainSock;
         int m_port = 5000;
-        public void Connect()
+        private string tryIP = "";
+
+        bool isChatOpen = false;
+        bool isCancle = false; //플레이어가 취소 요청 보냈으면 이후 승낙되어도 얘는 파기
+        public void Connect(string _ip)
         {
-            Console.WriteLine("클라 컨넥");
+            Console.WriteLine(_ip+"서버에 컨넥 시도");
+            tryIP = _ip;
             mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            string parseIP = ParseCurIP.GetLocalIP();
-            if(parseIP == null)
-            {
-                Console.WriteLine("IP 받아오기 실패");
-                return;
-            }
+            string parseIP = _ip;
             IPAddress serverAddr = IPAddress.Parse(parseIP);
             IPEndPoint clientEP = new IPEndPoint(serverAddr, m_port);
+           
             mainSock.BeginConnect(clientEP, new AsyncCallback(ConnectCallback), mainSock);
+            EnterMessege(); //메시지 입력 호출
         }
+
         public void Close()
         {
             Console.WriteLine("클라에서 끊음");
+            isCancle = true;
             if (mainSock != null)
             {
                 mainSock.Close();
                 mainSock.Dispose();
+                mainSock = null;
             }
+            
+            ClientLogIn login = new ClientLogIn();
+            login.EnterIP();
         }
+
         public class AsyncObject
         {
             public int numbering = 0;
@@ -56,12 +65,13 @@ namespace testTcp
         }
         void ConnectCallback(IAsyncResult ar)
         {
-            Console.WriteLine("한번인가 두번인가 클라이언트 연결 콜백");
-
+            Console.WriteLine("연결 응답 확인");
+            if (mainSock == null)
+                return;
 
             try
             {
-                Console.WriteLine("클라 연결 콜백");
+                Console.WriteLine("연결 성공");
                 Socket client = (Socket)ar.AsyncState;
                 // client.EndConnect(ar);
                 AsyncObject obj = new AsyncObject(Server.bufferSize); //버퍼 사이즈
@@ -71,12 +81,18 @@ namespace testTcp
                 //서버에서 보낼때는 사이즈가 8 이라서 1번만에 받음. 
                 obj.numbering = 100;
                 obj.WorkingSocket = mainSock;
+                
                 mainSock.BeginReceive(obj.Buffer, 0, obj.BufferSize, 0, DataReceived, obj);
             }
             catch (Exception e)
             {
-                Console.WriteLine("받을거 없음?");
-                Connect();
+                if(isCancle == true)
+                {
+                    return;
+                }
+                Console.WriteLine($"연결 실패 {tryIP} 재 연결 시도");
+                Connect(tryIP);
+                
             }
 
 
@@ -120,18 +136,49 @@ namespace testTcp
                 {
                     Console.WriteLine(textList[i]);
                 }
+                Console.WriteLine("메시지를 입력하세요. 나가기 q");
 
                 obj.WorkingSocket.BeginReceive(obj.Buffer, 0, obj.BufferSize, 0, DataReceived, obj);
             }
             catch (Exception e)
             {
+                if (isCancle == true)
+                    return;
                 Console.WriteLine("먼가 이상 재접속 시도" + e.HResult);
-                Connect();
+                Connect(tryIP);
             }
         }
+
+        public void EnterMessege()
+        {
+            //채팅 기능 한번만 오픈되도록
+            if(isChatOpen == true)
+            {
+                return;
+            }
+
+            isChatOpen = true;
+            Console.WriteLine("메시지를 입력하세요. 나가기 q");
+            while (true)
+            {
+                string messege = Console.ReadLine();
+                if(messege == "q")
+                {
+                    Close();
+                    return;
+                }
+                
+                string chatMeseege = " " + messege;
+                byte[] ubytes = System.Text.Encoding.Unicode.GetBytes(chatMeseege);
+                Send(ubytes);
+            }
+            
+        }
+
         public void Send(byte[] msg)
         {
           //  Console.WriteLine("클라 센드" + mainSock.Connected);
+           if(mainSock.Connected == true)
             mainSock.Send(msg);
         }
     }
