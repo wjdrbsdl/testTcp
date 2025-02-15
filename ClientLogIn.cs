@@ -36,7 +36,7 @@ namespace testTcp
         private bool IsValidForm(string ip)
         {
             //ipv4 가정
-            string[] intSplit = ip.Split(",");
+            string[] intSplit = ip.Split(".");
             //4구역이 나왔나
             if (intSplit.Length != 4)
             {
