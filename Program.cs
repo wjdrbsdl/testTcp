@@ -18,26 +18,35 @@ namespace study
             Server server = new Server();
             Client client = new Client();
             Console.WriteLine("서버 생성은 s 클라 생성은 c 를 입력하세요");
+            string select = "";
             while (true)
             {
                 string input = Console.ReadLine();
                 if (input == "s")
                 {
                     Console.WriteLine("s 받음");
-
-                    server.Start();
+                    select = input;
                     break;
                 }
                 else if (input == "c")
                 {
                     Console.WriteLine("c 받음");
-                    isServer = false;
-                    ClientLogIn claLogIn = new ClientLogIn();
-                    claLogIn.EnterIP();
+                    select = input;
+                   
                     break;
                 }
             }
-     
+            Console.WriteLine("메인함수 빠져나감");
+            if(select == "s")
+            {
+                server.Start();
+            }
+            else
+            {
+                isServer = false;
+                ClientLogIn claLogIn = new ClientLogIn();
+                claLogIn.EnterIP();
+            }
 
             //연결이 완료됐다면 전송하는 코드
             while (true)
