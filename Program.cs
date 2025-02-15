@@ -32,7 +32,8 @@ namespace study
                 {
                     Console.WriteLine("c 받음");
                     isServer = false;
-                    client.Connect();
+                    ClientLogIn claLogIn = new ClientLogIn();
+                    claLogIn.EnterIP();
                     break;
                 }
             }
@@ -49,11 +50,6 @@ namespace study
                     {
                         server.Close();
                     }
-                    else
-                    {
-
-                        client.Close();
-                    }
                 }
 
                 string a = " "+exit;
@@ -67,7 +63,6 @@ namespace study
                 else
                 {
                 
-                    client.Send(ubytes);
                 }
                     
             }
