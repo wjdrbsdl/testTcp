@@ -4,19 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace testTcp
-{
+
     public class ClientLogIn
     {
-        private string ConnetIP = "";
-
         //클라로 접속을 했으면 여기서 아이피 입력하고 접속 대기 및 접속 ip 바꾸기 진행,
         public void EnterIP()
         {
             
 
             bool waitingInputIP = true;
-            Client client = new Client();
+            
             while (waitingInputIP)
             {
                 Console.WriteLine("접속할 서버 IP를 입력하세요 ex) 172.30.1.23");
@@ -25,7 +22,8 @@ namespace testTcp
                 if(IsValidForm(ip) == true)
                 {
                     Console.Clear();
-                    client.Connect(ip);
+                    RoomClient client = new RoomClient(ip, 1);
+                    client.Connect();
                     waitingInputIP = false;
                 }
                 
@@ -63,4 +61,3 @@ namespace testTcp
             return true;
         }
    }
-}
