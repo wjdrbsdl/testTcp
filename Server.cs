@@ -18,15 +18,12 @@ public enum MeetState
 }
 
 
-namespace testTcp
-{
+
     public class Server
     {
-        int start = 5;
         static int index = 5;
         public static int bufferSize = 4000;
         Socket mainSock;
-        List<Socket> connectedClients = new List<Socket>();
         List<AsyncObject> connectedClientList = new List<AsyncObject>();
         int m_port = 5000;
         public void Start()
@@ -93,7 +90,6 @@ namespace testTcp
                 obj.numbering = index;
                 index++;
                 obj.WorkingSocket = client;
-                connectedClients.Add(client);
                 connectedClientList.Add(obj);
                 client.BeginReceive(obj.Buffer, 0, bufferSize, 0, DataReceived, obj);
 
@@ -176,24 +172,6 @@ namespace testTcp
 
         public void SendChat(byte[] msg, int _receiveNumbering)
         {
-            //for (int i = 0; i < connectedClients.Count; i++)
-            //{
-            //    if ((_index - start) == i)
-            //    {
-            //        msg[0] = 5;
-            //    }
-            //    else
-            //    {
-            //        msg[0] = (byte)' ';
-            //    }
-            //    Socket socket = connectedClients[i];
-            //    if (socket.Connected)
-            //    {
-            //        socket.Send(msg);
-            //    }
-
-            //}
-
             for (int i = 0; i < connectedClientList.Count; i++)
             {
                 if (connectedClientList[i].numbering == _receiveNumbering)
@@ -215,10 +193,10 @@ namespace testTcp
 
         public void Send(byte[] msg)
         {
-            for (int i = 0; i < connectedClients.Count; i++)
+            for (int i = 0; i < connectedClientList.Count; i++)
             {
                 Console.WriteLine("먼가 발산");
-                Socket socket = connectedClients[i];
+                Socket socket = connectedClientList[i].WorkingSocket;
                 if (socket.Connected)
                 {
 
@@ -230,4 +208,4 @@ namespace testTcp
 
     }
 
-}
+
