@@ -48,6 +48,10 @@ public class RoomClient
         {
             ResRoomJoin(receiveBuff);
         }
+        else if(reqType == ReqType.RoomStart)
+        {
+            ResRoomStart(receiveBuff);
+        }
 
         clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
     }
@@ -67,19 +71,51 @@ public class RoomClient
     {
         Console.WriteLine("방에 대한 정보를 받음" + _receiveData[1]);
         ReqType resType = (ReqType)_receiveData[0];
-        if (resType == ReqType.RoomMake)
+
+        //룸메이크 요청에 대한 대답이라면
+        //[1] 이 응답
+        //[2] 가 참가인원
+        //[3] 부터 참가 인원 넘버링 
+        string parti = "참가 번호 : ";
+        for (int i = 0; i < _receiveData[2]; i++)
         {
-            //룸메이크 요청에 대한 대답이라면
-            //[1] 이 응답
-            //[2] 가 참가인원
-            //[3] 부터 참가 인원 넘버링 
-            string parti = "참가 번호 : ";
-            for (int i = 0; i < _receiveData[2]; i++)
-            {
-                parti += _receiveData[i + 3].ToString() + " ";
-            }
-            Console.WriteLine(parti);
+            parti += _receiveData[i + 3].ToString() + " ";
         }
+        Console.WriteLine(parti);
+        meetState = MeetState.Room;
+
+    }
+
+    private void ReqRoomStart()
+    {
+        Console.WriteLine("시작 요청");
+        string roomName = "테스트로 아무거나 써보기"; //있던 방이름
+        byte[] roomByte = Encoding.Unicode.GetBytes(roomName);
+        byte[] reqRoomStart = new byte[roomByte.Length + 1];
+        Array.Copy(roomByte, 0, reqRoomStart, 1, roomByte.Length); //룸 네임 전체를 요청 바이트 1번째부터 복사시작
+        reqRoomStart[0] = (byte)ReqType.RoomStart;
+        clientSocket.Send(reqRoomStart);
+    }
+
+    private void ResRoomStart(byte[] _receiveData)
+    {
+        Console.WriteLine("시작 요청에 대한 응답");
+        byte[] ip = new byte[4];
+        for (int i = 0; i < _receiveData[2]; i++)
+        {
+            ip[i] = _receiveData[i + 3];
+            Console.WriteLine(ip[i].ToString());
+        }
+        IPAddress address = new IPAddress(ip);
+        int portNum = 5001;
+        Console.WriteLine("방에서 순서 "+_receiveData[1].ToString());
+
+        if (_receiveData[1] == 0)
+        {
+            Console.WriteLine("방장으로서 호스트 진행");
+        }
+
+        meetState = MeetState.Game;
     }
 
     private void Update()
@@ -92,6 +128,15 @@ public class RoomClient
                 if (command == "j")
                 {
                     ReqRoomJoin();
+                }
+
+            }
+            else if (meetState == MeetState.Room)
+            {
+                string command = Console.ReadLine();
+                if (command == "s")
+                {
+                    ReqRoomStart();
                 }
 
             }
