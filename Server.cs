@@ -27,6 +27,7 @@ public class Server
     Socket mainSock;
     List<AsyncObject> connectedClientList = new List<AsyncObject>();
     int m_port = 5000;
+
     public void Start()
     {
         try
@@ -37,6 +38,7 @@ public class Server
             mainSock.Bind(serverEP);
             mainSock.Listen(10);
             mainSock.BeginAccept(AcceptCallback, null);
+            UpdateRemoveSockect();
             //mainSock.BeginConnect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), Convert.ToInt32(50001)), null, null);
         }
         catch (Exception e)
@@ -44,24 +46,6 @@ public class Server
         }
     }
 
-    public void Close()
-    {
-
-        if (mainSock != null)
-        {
-            mainSock.Close();
-            mainSock.Dispose();
-        }
-
-        foreach (AsyncObject socket in connectedClientList)
-        {
-            socket.WorkingSocket.Close();
-            socket.WorkingSocket.Dispose();
-        }
-        connectedClientList.Clear();
-
-        //mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
-    }
 
     public class AsyncObject
     {
@@ -119,22 +103,43 @@ public class Server
         {
 
             AsyncObject obj = (AsyncObject)ar.AsyncState;
-            for (int i = 0; i < connectedClientList.Count; i++)
-            {
-                if (obj.numbering == connectedClientList[i].numbering)
-                {
-
-                    connectedClientList[i].WorkingSocket.Close();
-                    connectedClientList[i].WorkingSocket.Dispose();
-                    Console.WriteLine(obj.numbering + " 소켓 제거");
-                    connectedClientList.RemoveAt(i);
-                    break;
-                }
-            }
+            AddRemoveSokect(obj.numbering);
             Console.WriteLine("서버에서이상" + e.HResult);
         }
 
     }
+
+    #region 소켓리스트에서 제거
+    Queue<int> removeQueue = new Queue<int>();
+    private void AddRemoveSokect(int _numbering)
+    {
+        removeQueue.Enqueue(_numbering);
+    }
+
+    private void UpdateRemoveSockect()
+    {
+        while (true)
+        {
+            int removeCount = removeQueue.Count;
+            for (int i = 0; i < removeCount; i++)
+            {
+                int numbering = removeQueue.Dequeue();
+                for (int x = 0; x < connectedClientList.Count; x++)
+                {
+                    if (numbering == connectedClientList[x].numbering)
+                    {
+
+                        connectedClientList[x].WorkingSocket.Close();
+                        connectedClientList[x].WorkingSocket.Dispose();
+
+                        connectedClientList.RemoveAt(x);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    #endregion
 
 
 
@@ -189,8 +194,6 @@ public class Server
         }
     }
 
-
-
     public void SendChat(byte[] msg, int _receiveNumbering)
     {
         for (int i = 0; i < connectedClientList.Count; i++)
@@ -227,6 +230,24 @@ public class Server
         }
     }
 
+    public void Close()
+    {
+
+        if (mainSock != null)
+        {
+            mainSock.Close();
+            mainSock.Dispose();
+        }
+
+        foreach (AsyncObject socket in connectedClientList)
+        {
+            socket.WorkingSocket.Close();
+            socket.WorkingSocket.Dispose();
+        }
+        connectedClientList.Clear();
+
+        //mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
+    }
 }
 
 
