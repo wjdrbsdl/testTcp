@@ -15,7 +15,7 @@ namespace study
         static void Main(string[] args)
         {
             byte[] msg = new byte[8];
-            Server server = new Server();
+            LobbyServer server = new LobbyServer();
             Console.WriteLine("서버 생성은 s 클라 생성은 c 를 입력하세요");
             string select = "";
             while (true)

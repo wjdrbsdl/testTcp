@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace testTcp
 {
-    public class RoomServer
+    public class PlayServer
     {
         public List<ClaInfo> roomUser = new();
         public Socket linkSocket; //룸유저 받아들이는 소켓
@@ -113,7 +113,7 @@ namespace testTcp
         #region 룸 상태 변경 전달
         public void SendRoomState()
         {
-            IPEndPoint endPoint = new IPEndPoint(Server.ServerIp, 5000);
+            IPEndPoint endPoint = new IPEndPoint(LobbyServer.ServerIp, 5000);
             linkStateLobby = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             linkStateLobby.BeginConnect(endPoint, LobbyConnectCallBack, linkStateLobby);
         }
@@ -133,7 +133,7 @@ namespace testTcp
 
         public void ReqChageRoomState()
         {
-            byte[] reqChangeRoomState = new byte[] { (byte)ReqType.RoomState, (byte)RoomState.Ready };
+            byte[] reqChangeRoomState = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState.Ready };
             linkStateLobby.Send(reqChangeRoomState);
             linkStateLobby.Close();
             linkStateLobby.Dispose();
@@ -143,7 +143,7 @@ namespace testTcp
         #region 룸 인원 변경 전달
         public void SendRoomCount()
         {
-            IPEndPoint endPoint = new IPEndPoint(Server.ServerIp, 5000);
+            IPEndPoint endPoint = new IPEndPoint(LobbyServer.ServerIp, 5000);
             linkRoomCount = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             linkRoomCount.BeginConnect(endPoint, RoomCountCallBack, linkRoomCount);
         }
@@ -173,7 +173,7 @@ namespace testTcp
              */
 
             byte[] name = Encoding.Unicode.GetBytes(roomName);
-            byte[] roomCode = new byte[] { (byte)ReqType.RoomCount, (byte)roomUser.Count, (byte)name.Length };
+            byte[] roomCode = new byte[] { (byte)ReqLobbyType.RoomUserCount, (byte)roomUser.Count, (byte)name.Length };
             byte[] resRoomCount = roomCode.Concat(name).ToArray();
 
             linkRoomCount.Send(resRoomCount);

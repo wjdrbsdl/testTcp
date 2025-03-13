@@ -4,7 +4,7 @@ using System.Text;
 using testTcp;
 
 
-public class RoomClient
+public class LobbyClient
 {
     public Socket clientSocket;
     public int port = 5000;
@@ -13,7 +13,7 @@ public class RoomClient
     public MeetState meetState = MeetState.Lobby;
     public string RoomName = "";
 
-    public RoomClient(string _ip, int _id, string _preRoomName = "")
+    public LobbyClient(string _ip, int _id, string _preRoomName = "")
     {
         ip = _ip;
         id = _id;
@@ -24,7 +24,7 @@ public class RoomClient
     {
         clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         IPAddress ipAddress = IPAddress.Parse(ip);
-        Server.ServerIp = ipAddress; //들어갔던 서버 기록
+        LobbyServer.ServerIp = ipAddress; //들어갔던 서버 기록
         ClientLogIn.ServerIp = ipAddress.GetAddressBytes(); //게임 서버 ip 저장. 
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
         byte[] buff = new byte[100];
@@ -57,16 +57,12 @@ public class RoomClient
             Console.WriteLine("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
 
-            ReqType reqType = (ReqType)receiveBuff[0];
-            if (reqType == ReqType.RoomMake)
+            ReqLobbyType reqType = (ReqLobbyType)receiveBuff[0];
+            if (reqType == ReqLobbyType.RoomMake)
             {
                 ResRoomJoin(receiveBuff);
             }
-            else if (reqType == ReqType.RoomStart)
-            {
-              
-            }
-            else if(reqType == ReqType.ClientNumber)
+            else if(reqType == ReqLobbyType.ClientNumber)
             {
                 id = receiveBuff[1];
             }
@@ -88,7 +84,7 @@ public class RoomClient
         byte[] roomByte = Encoding.Unicode.GetBytes(roomName);
         byte[] reqRoom = new byte[roomByte.Length + 1];
         Array.Copy(roomByte, 0, reqRoom, 1, roomByte.Length); //룸 네임 전체를 요청 바이트 1번째부터 복사시작
-        reqRoom[0] = (byte)ReqType.RoomMake;
+        reqRoom[0] = (byte)ReqLobbyType.RoomMake;
         clientSocket.Send(reqRoom);
     }
 
@@ -105,7 +101,7 @@ public class RoomClient
               * [4+[2]] 부터 [3] 만큼
               */
 
-        if (_receiveData[1] == Server.failCode)
+        if (_receiveData[1] == LobbyServer.failCode)
         {
             //현재 인원수 쪽에 패일 코드를 넣어서 불가 체크
             Console.WriteLine("r방에 참가 못했음");
@@ -138,7 +134,7 @@ public class RoomClient
         {
             //현재 방 인원이 0 이라면 방장으로서 호스트도 생성
             Console.WriteLine("방장으로서 호스트 진행");
-            RoomServer roomServer = new RoomServer();
+            PlayServer roomServer = new PlayServer();
             roomServer.roomName = roomName;
             roomServer.Start();
         }
@@ -148,7 +144,7 @@ public class RoomClient
         clientSocket.Dispose();
 
         Console.WriteLine("플레이어 참가 클라이언트 생성");
-        PlayerClient playerClient = new PlayerClient(ip, 5001);
+        PlayClient playerClient = new PlayClient(ip, 5001);
         playerClient.Connect();
 
         meetState = MeetState.Room;
@@ -158,7 +154,7 @@ public class RoomClient
     private void ReqDisConnect()
     {
         Console.WriteLine("종료 요청");
-        byte[] reqClaDisconnect = new byte[] { (byte)ReqType.Close };
+        byte[] reqClaDisconnect = new byte[] { (byte)ReqLobbyType.Close };
         clientSocket.Send(reqClaDisconnect);
     }
 

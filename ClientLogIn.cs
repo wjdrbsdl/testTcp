@@ -21,7 +21,7 @@ public class ClientLogIn
             if (IsValidForm(ip) == true)
             {
                 Console.Clear();
-                RoomClient client = new RoomClient(ip, 1);
+                LobbyClient client = new LobbyClient(ip, 1);
                 client.Connect();
                 waitingInputIP = false;
             }

@@ -12,7 +12,7 @@ public enum ReqRoomCode
     Ready, Start, RoomOut
 }
 
-public class PlayerClient
+public class PlayClient
 {
     public Socket clientSocket;
     public int port;
@@ -21,7 +21,7 @@ public class PlayerClient
     public MeetState meetState = MeetState.Lobby;
     public string state = "";
 
-    public PlayerClient(byte[] _ip, int _port, int _id = 0)
+    public PlayClient(byte[] _ip, int _port, int _id = 0)
     {
         ip = _ip;
         id = _id;
