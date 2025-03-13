@@ -13,6 +13,16 @@ public class LobbyClient
     public MeetState meetState = MeetState.Lobby;
     public string RoomName = "";
 
+    public LobbyClient()
+    {
+
+    }
+
+    ~LobbyClient()
+    {
+        Console.WriteLine( "로비 클라 소멸");
+    }
+
     public LobbyClient(string _ip, int _id, string _preRoomName = "")
     {
         ip = _ip;
@@ -27,6 +37,15 @@ public class LobbyClient
         LobbyServer.ServerIp = ipAddress; //들어갔던 서버 기록
         ClientLogIn.ServerIp = ipAddress.GetAddressBytes(); //게임 서버 ip 저장. 
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
+        byte[] buff = new byte[100];
+        clientSocket.BeginConnect(endPoint, CallBackConnect, buff);
+        Update();
+    }
+
+    public void ReConnect()
+    {
+        clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        IPEndPoint endPoint = new IPEndPoint(LobbyServer.ServerIp, port);
         byte[] buff = new byte[100];
         clientSocket.BeginConnect(endPoint, CallBackConnect, buff);
         Update();
@@ -187,6 +206,10 @@ public class LobbyClient
                     ReqRoomJoin();
                 }
 
+            }
+            else
+            {
+                return;
             }
         }
     }

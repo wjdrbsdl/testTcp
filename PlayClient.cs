@@ -88,7 +88,8 @@ public class PlayClient
         Console.WriteLine("클라가 나가기 요청");
         byte[] reqRoomOut = new byte[] { (byte)ReqRoomType.RoomOut, (byte)id };
         clientSocket.Send(reqRoomOut);
-
+        LobbyClient client = new LobbyClient();
+        client.ReConnect();
     }
     
     public void ResRoomOut()
