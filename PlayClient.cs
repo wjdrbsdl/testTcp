@@ -111,6 +111,7 @@ public class PlayClient
         Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
         while (true)
         {
+           // Console.WriteLine("플클 와일문");
             string messege = Console.ReadLine();
             if (messege == "q")
             {

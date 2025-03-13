@@ -200,6 +200,7 @@ public class LobbyClient
         {
             if (meetState == MeetState.Lobby)
             {
+               // Console.WriteLine("로클 와일문");
                 string command = Console.ReadLine();
                 if (command == "j")
                 {

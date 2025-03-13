@@ -20,6 +20,7 @@ namespace study
             string select = "";
             while (true)
             {
+               // Console.WriteLine("메인 와일문");
                 string input = Console.ReadLine();
                 if (input == "s")
                 {
@@ -50,29 +51,26 @@ namespace study
             //연결이 완료됐다면 전송하는 코드
             while (true)
             {
-                string exit = Console.ReadLine();
-
-                if(exit == "q")
-                {
-                    if (isServer)
-                    {
-                        server.Close();
-                    }
-                }
-
-                string a = " "+exit;
-                byte[] ubytes = System.Text.Encoding.Unicode.GetBytes(a);
-       //     출처: https://timeboxstory.tistory.com/120 [매 시간 담기는 이야기 상자:티스토리]
+              
             
+              
                 if (isServer)
                 {
+                  //  Console.WriteLine("프로그램 와일문");
+                    string exit = Console.ReadLine();
+                    string a = " " + exit;
+                    byte[] ubytes = System.Text.Encoding.Unicode.GetBytes(a);
+                    if (exit == "q")
+                    {
+                        if (isServer)
+                        {
+                            server.Close();
+                        }
+                    }
+
                     server.Send(ubytes);
                 }
-                else
-                {
-                
-                }
-                    
+               
             }
             
             //client.Send(msg);
