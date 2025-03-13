@@ -204,13 +204,11 @@ public class LobbyClient
                 if (command == "j")
                 {
                     ReqRoomJoin();
+                    return;
                 }
 
             }
-            else
-            {
-                return;
-            }
+       
         }
     }
 
