@@ -10,7 +10,7 @@ using System.IO;
 
 public enum ReqType
 {
-    RoomMake, RoomReJoin, RoomStart, RoomOut, Close, RoomState, RoomCount
+    RoomMake, RoomReJoin, RoomStart, RoomOut, Close, RoomState, RoomCount, ClientNumber
 }
 
 public enum MeetState
@@ -40,7 +40,8 @@ public class Server
             IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, m_port);
             mainSock.Bind(serverEP);
             mainSock.Listen(10);
-            mainSock.BeginAccept(AcceptCallback, null);
+            byte[] aa = new byte[] { 55 };
+            mainSock.BeginAccept(AcceptCallback, aa);
             UpdateRemoveSockect();
             //mainSock.BeginConnect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), Convert.ToInt32(50001)), null, null);
         }
@@ -81,8 +82,9 @@ public class Server
             obj.WorkingSocket = client;
             connectedClientList.Add(obj);
             client.BeginReceive(obj.Buffer, 0, bufferSize, 0, DataReceived, obj);
+            
 
-            mainSock.BeginAccept(AcceptCallback, null);
+            mainSock.BeginAccept(AcceptCallback, index);
         }
         catch (Exception e)
         {

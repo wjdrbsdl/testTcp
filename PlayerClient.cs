@@ -7,11 +7,15 @@ using System.Text;
 using System.Threading.Tasks;
 using testTcp;
 
+public enum ReqRoomCode
+{
+    Ready, Start, RoomOut
+}
 
 public class PlayerClient
 {
     public Socket clientSocket;
-    public int port = 5000;
+    public int port;
     public byte[] ip;
     public int id;
     public MeetState meetState = MeetState.Lobby;
@@ -86,12 +90,19 @@ public class PlayerClient
             {
                 //Close();
                 //return;
+
+                return;
             }
 
             string chatMeseege = " " + messege;
             byte[] ubytes = System.Text.Encoding.Unicode.GetBytes(chatMeseege);
             ReqChat(ubytes);
         }
+
+    }
+
+    public void ReqRoomOut()
+    {
 
     }
 

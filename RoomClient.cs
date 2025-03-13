@@ -27,7 +27,8 @@ public class RoomClient
         Server.ServerIp = ipAddress; //들어갔던 서버 기록
         ClientLogIn.ServerIp = ipAddress.GetAddressBytes(); //게임 서버 ip 저장. 
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
-        clientSocket.BeginConnect(endPoint, CallBackConnect, clientSocket);
+        byte[] buff = new byte[100];
+        clientSocket.BeginConnect(endPoint, CallBackConnect, buff);
         Update();
     }
 
@@ -36,7 +37,9 @@ public class RoomClient
         try
         {
             //연결 되었으면 자료 받을 준비, 상태 준비
-            Console.WriteLine("클라 연결 콜백");
+
+            byte[] objNumber = _result.AsyncState as byte[];
+            Console.WriteLine("클라 연결 콜백" + objNumber[0].ToString());
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
         }
@@ -62,6 +65,10 @@ public class RoomClient
             else if (reqType == ReqType.RoomStart)
             {
               
+            }
+            else if(reqType == ReqType.ClientNumber)
+            {
+                id = receiveBuff[1];
             }
 
             if(clientSocket.Connected)
