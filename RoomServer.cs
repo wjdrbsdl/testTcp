@@ -12,8 +12,11 @@ namespace testTcp
     public class RoomServer
     {
         public List<ClaInfo> roomUser = new();
-        public Socket linkSocket;
+        public Socket linkSocket; //룸유저 받아들이는 소켓
+        public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
+        public Socket linkRoomCount; //서버로비와 소통하는 소켓 -> 방 인원 바뀔때 신호 
         public int number = 0;
+        public string roomName;
         //방장이 호스트가 되어 해당 방에있던 유저들의 입력을 받고 처리 
 
         public void Start()
@@ -51,8 +54,8 @@ namespace testTcp
                 number++;
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
-
-                linkSocket.BeginAccept(AcceptCallBack, null);
+                SendRoomCount(); //변경한 인원 전달
+                linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
             }
             catch (Exception e)
             {
@@ -65,7 +68,7 @@ namespace testTcp
         {
             try
             {
-                Console.WriteLine("룸서버로서 리시브");
+                Console.WriteLine("룸     서버로서 리시브");
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
                 byte[] recevieBuff = cla.buffer;
                 int received = cla.workingSocket.EndReceive(ar);
@@ -77,6 +80,7 @@ namespace testTcp
 
                 //obj.ClearBuffer();
                 cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
+           
             }
             catch (Exception e)
             {
@@ -106,6 +110,77 @@ namespace testTcp
             }
         }
 
+        #region 룸 상태 변경 전달
+        public void SendRoomState()
+        {
+            IPEndPoint endPoint = new IPEndPoint(Server.ServerIp, 5000);
+            linkStateLobby = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            linkStateLobby.BeginConnect(endPoint, LobbyConnectCallBack, linkStateLobby);
+        }
+
+        public void LobbyConnectCallBack(IAsyncResult _result)
+        {
+            try
+            {
+               
+                ReqChageRoomState();    
+            }
+            catch
+            {
+                Console.WriteLine("방 서버의 로비서버 접속 실패");
+            }
+        }
+
+        public void ReqChageRoomState()
+        {
+            byte[] reqChangeRoomState = new byte[] { (byte)ReqType.RoomState, (byte)RoomState.Ready };
+            linkStateLobby.Send(reqChangeRoomState);
+            linkStateLobby.Close();
+            linkStateLobby.Dispose();
+        }
+        #endregion
+
+        #region 룸 인원 변경 전달
+        public void SendRoomCount()
+        {
+            IPEndPoint endPoint = new IPEndPoint(Server.ServerIp, 5000);
+            linkRoomCount = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            linkRoomCount.BeginConnect(endPoint, RoomCountCallBack, linkRoomCount);
+        }
+
+        public void RoomCountCallBack(IAsyncResult _result)
+        {
+            try
+            {
+               // Console.WriteLine("방 서버의 로비서버에 인원 변경 전달");
+                ReqChangeRoomCount();
+            }
+            catch
+            {
+                Console.WriteLine("방수 변경 콜백 실패");
+            }
+        }
+
+        public void ReqChangeRoomCount()
+        {
+
+            Console.WriteLine("방 인원 변경 함수 호출");
+            /*
+             * [0] 요청타입
+             * [1] 현재 유저 수
+             * [2] 방 이름 길이
+             * [3] 부터 방 제목들
+             */
+
+            byte[] name = Encoding.Unicode.GetBytes(roomName);
+            byte[] roomCode = new byte[] { (byte)ReqType.RoomCount, (byte)roomUser.Count, (byte)name.Length };
+            byte[] resRoomCount = roomCode.Concat(name).ToArray();
+
+            linkRoomCount.Send(resRoomCount);
+            linkRoomCount.Close();
+            linkRoomCount.Dispose();
+        }
+        #endregion
     }
 
 }
