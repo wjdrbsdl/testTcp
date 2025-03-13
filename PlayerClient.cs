@@ -26,8 +26,9 @@ public class PlayerClient
 
     public void Connect()
     {
+        Console.WriteLine("플레이 클라이언트 연결");
         clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        IPAddress ipAddress = new IPAddress( ip);
+        IPAddress ipAddress = new IPAddress(ip);
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
         clientSocket.BeginConnect(endPoint, CallBackConnect, clientSocket);
         EnterMessege();
@@ -63,7 +64,7 @@ public class PlayerClient
         }
         catch(Exception e)
         {
-
+            Console.WriteLine("클라 리십 실패");
         }
     }
 
@@ -77,7 +78,7 @@ public class PlayerClient
         }
 
         isChatOpen = true;
-        Console.WriteLine("메시지를 입력하세요. 나가기 q");
+        Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
         while (true)
         {
             string messege = Console.ReadLine();
@@ -120,5 +121,17 @@ public class PlayerClient
         Console.WriteLine(split);
         
     }
+
+    #region 게임 시작
+    private void ReqRoomStart()
+    {
+  
+    }
+
+    private void ResRoomStart(byte[] _receiveData)
+    {
+      
+    }
+    #endregion
 }
 
