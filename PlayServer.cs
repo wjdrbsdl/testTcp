@@ -34,12 +34,12 @@ namespace testTcp
         {
             public byte[] buffer;
             public Socket workingSocket;
-            public int number;
-            public ClaInfo(int _bufferSize, Socket _claSocket, int _number)
+            public int ID;
+            public ClaInfo(int _bufferSize, Socket _claSocket)
             {
                 buffer = new byte[_bufferSize];
                 workingSocket = _claSocket;
-                number = _number;
+               
             }
           
         }
@@ -50,7 +50,7 @@ namespace testTcp
             {
                 Console.WriteLine("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
-                ClaInfo newCla = new ClaInfo(100, client, number);
+                ClaInfo newCla = new ClaInfo(100, client);
                 number++;
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
@@ -74,9 +74,11 @@ namespace testTcp
                 int received = cla.workingSocket.EndReceive(ar);
                 byte[] buffer = new byte[received];
                 Array.Copy(cla.buffer, 0, buffer, 0, received);
-                SendChat(cla.buffer, cla.number);
+                //SendChat(cla.buffer, cla.ID);
                 ////Send(obj.Buffer);
                 //HandleRoomMaker(obj, buffer);
+                HandleReq(cla, cla.buffer);
+
 
                 //obj.ClearBuffer();
                 cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
@@ -89,17 +91,32 @@ namespace testTcp
 
         }
 
+        private void HandleReq(ClaInfo _claInfo, byte[] _reqData)
+        {
+            ReqRoomType reqType = (ReqRoomType)_reqData[0];
+            
+            if(reqType == ReqRoomType.ClientID)
+            {
+                _claInfo.ID = _reqData[1];
+             //  Console.WriteLine("플레이클라이언트 아이디 입력 " + _claInfo.ID);
+            }
+            else if (reqType == ReqRoomType.Chat)
+            {
+                SendChat(_reqData, _claInfo.ID);
+            }
+        }
+
         public void SendChat(byte[] msg, int _receiveNumbering)
         {
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].number == _receiveNumbering)
+                if (roomUser[i].ID == _receiveNumbering)
                 {
-                    msg[0] = (byte)' ';
+                    msg[1] = (byte)' ';
                 }
                 else
                 {
-                    msg[0] = (byte)_receiveNumbering;
+                    msg[1] = (byte)_receiveNumbering;
                 }
                 Socket socket = roomUser[i].workingSocket;
                 if (socket.Connected)

@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using testTcp;
 
-public enum ReqRoomCode
+public enum ReqRoomType
 {
-    Ready, Start, RoomOut
+    Ready, Start, RoomOut, Chat, ClientID
 }
 
 public class PlayClient
@@ -30,7 +30,6 @@ public class PlayClient
 
     public void Connect()
     {
-        Console.WriteLine("플레이 클라이언트 연결");
         clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         IPAddress ipAddress = new IPAddress(ip);
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
@@ -47,6 +46,7 @@ public class PlayClient
             Console.WriteLine("게임 클라 연결 콜백");
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
+            ReqClientNumber();
         }
         
         catch(Exception e)
@@ -63,7 +63,12 @@ public class PlayClient
             Console.WriteLine("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
             int received = clientSocket.EndReceive(_result);
-            HandleChat(receiveBuff);
+            ReqRoomType reqType = (ReqRoomType)receiveBuff[0];
+            if(reqType == ReqRoomType.Chat)
+            {
+                ResChat(receiveBuff);
+            }
+            
             clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
         }
         catch(Exception e)
@@ -71,6 +76,23 @@ public class PlayClient
             Console.WriteLine("클라 리십 실패");
         }
     }
+
+    public void ReqClientNumber()
+    {
+        byte[] reqID = new byte[] { (byte)ReqRoomType.ClientID, (byte)id };
+        clientSocket.Send(reqID);
+    }
+
+    public void ReqRoomOut()
+    {
+
+    }
+    
+    public void ResRoomOut()
+    {
+
+    }
+
 
     bool isChatOpen = false;
     public void EnterMessege()
@@ -95,27 +117,25 @@ public class PlayClient
             }
 
             string chatMeseege = " " + messege;
-            byte[] ubytes = System.Text.Encoding.Unicode.GetBytes(chatMeseege);
-            ReqChat(ubytes);
+ 
+            ReqChat(chatMeseege);
         }
 
     }
 
-    public void ReqRoomOut()
+    public void ReqChat(string msg)
     {
-
-    }
-
-    public void ReqChat(byte[] msg)
-    {
+        byte[] chatByte = Encoding.Unicode.GetBytes(msg);
+        byte[] chatCode = new byte[] { (byte)ReqRoomType.Chat };
+        byte[] reqByte = chatCode.Concat(chatByte).ToArray();
         //  Console.WriteLine("클라 센드" + mainSock.Connected);
         if (clientSocket.Connected == true)
-            clientSocket.Send(msg);
+            clientSocket.Send(reqByte);
     }
 
-    void HandleChat(byte[] _chatData)
+    public void ResChat(byte[] _receiveData)
     {
-        string convertStr = Encoding.Unicode.GetString(_chatData);
+        string convertStr = Encoding.Unicode.GetString(_receiveData, 1, _receiveData.Length-1);
         char first = convertStr[0];
 
         int max = Math.Min(convertStr.Length - 1, convertStr.Length);
@@ -126,23 +146,12 @@ public class PlayClient
         }
         else
         {
-            int number = _chatData[0];
+            int number = _receiveData[0];
             split = "[" + number.ToString() + "]:" + split;
         }
         Console.WriteLine(split);
         
     }
 
-    #region 게임 시작
-    private void ReqRoomStart()
-    {
-  
-    }
-
-    private void ResRoomStart(byte[] _receiveData)
-    {
-      
-    }
-    #endregion
 }
 
