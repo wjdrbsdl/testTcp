@@ -104,6 +104,11 @@ namespace testTcp
             {
                 SendChat(_reqData, _claInfo.ID);
             }
+            else if(reqType ==ReqRoomType.RoomOut)
+            {
+                ExitClient(_reqData);
+                SendRoomCount();
+            }
         }
 
         public void SendChat(byte[] msg, int _receiveNumbering)
@@ -125,6 +130,20 @@ namespace testTcp
                 }
 
             }
+        }
+
+        public void ExitClient(byte[] _receiveData)
+        {
+            Console.WriteLine($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID == _receiveData[1])
+                {
+                    roomUser.RemoveAt(i);
+                }
+            }
+            Console.WriteLine(roomUser.Count);
+         
         }
 
         #region 룸 상태 변경 전달

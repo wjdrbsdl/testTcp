@@ -85,6 +85,9 @@ public class PlayClient
 
     public void ReqRoomOut()
     {
+        Console.WriteLine("클라가 나가기 요청");
+        byte[] reqRoomOut = new byte[] { (byte)ReqRoomType.RoomOut, (byte)id };
+        clientSocket.Send(reqRoomOut);
 
     }
     
@@ -110,9 +113,7 @@ public class PlayClient
             string messege = Console.ReadLine();
             if (messege == "q")
             {
-                //Close();
-                //return;
-
+                ReqRoomOut();
                 return;
             }
 
