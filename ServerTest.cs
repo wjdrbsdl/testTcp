@@ -36,7 +36,7 @@ namespace testTcp
                 cSocket.Numbering = m_numbering;
                 m_numbering++;
                 clientList.Add(cSocket); //연결된 리스트에 추가
-                client.BeginReceive(); //해당 소켓 수신 상태로 호출
+                //client.BeginReceive(); //해당 소켓 수신 상태로 호출
 
                 mainSocket.BeginAccept(AcceptCallBack, null); //서버 소켓은 다시 연결수락용으로 진행
             }
