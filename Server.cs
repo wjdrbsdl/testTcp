@@ -10,7 +10,7 @@ using System.IO;
 
 public enum ReqType
 {
-    RoomMake, RoomStart, RoomOut
+    RoomMake, RoomReJoin, RoomStart, RoomOut, Close
 }
 
 public enum MeetState
@@ -22,17 +22,20 @@ public enum MeetState
 
 public class Server
 {
+    public static IPAddress ServerIp;
     static int index = 5;
     public static int bufferSize = 4000;
     Socket mainSock;
     List<AsyncObject> connectedClientList = new List<AsyncObject>();
     int m_port = 5000;
+    public static byte failCode = 255;
 
     public void Start()
     {
         try
         {
             Console.WriteLine("서버 연결 시작" + ParseCurIP.GetLocalIP());
+            ServerIp = IPAddress.Parse(ParseCurIP.GetLocalIP());
             mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, m_port);
             mainSock.Bind(serverEP);
@@ -43,6 +46,7 @@ public class Server
         }
         catch (Exception e)
         {
+            Console.WriteLine( "연결 실패");
         }
     }
 
@@ -81,17 +85,21 @@ public class Server
             mainSock.BeginAccept(AcceptCallback, null);
         }
         catch (Exception e)
-        { }
+        {
+            Console.WriteLine("받아들이기 실패");
+        }
     }
 
     void DataReceived(IAsyncResult ar)
     {
         try
         {
+            
             AsyncObject obj = (AsyncObject)ar.AsyncState;
             int received = obj.WorkingSocket.EndReceive(ar);
             byte[] buffer = new byte[received];
             Array.Copy(obj.Buffer, 0, buffer, 0, received);
+            Console.WriteLine("요청 받음 " + (ReqType)buffer[0]);
             //  SendChat(obj.Buffer, obj.numbering);
             //Send(obj.Buffer);
             HandleRoomMaker(obj, buffer);
@@ -104,7 +112,7 @@ public class Server
 
             AsyncObject obj = (AsyncObject)ar.AsyncState;
             AddRemoveSokect(obj.numbering);
-            Console.WriteLine("서버에서이상" + e.HResult);
+            Console.WriteLine("서버에서이상 접속한 소켓 수" + connectedClientList.Count);
         }
 
     }
@@ -133,6 +141,7 @@ public class Server
                         connectedClientList[x].WorkingSocket.Dispose();
 
                         connectedClientList.RemoveAt(x);
+                        Console.WriteLine(numbering+"소켓 제거 남은 수 "+connectedClientList.Count);
                         break;
                     }
                 }
@@ -141,9 +150,7 @@ public class Server
     }
     #endregion
 
-
-
-    Dictionary<string, List<AsyncObject>> roomList = new();
+    Dictionary<string, RoomData> roomList = new();
     void HandleRoomMaker(AsyncObject _obj, byte[] _reqData)
     {
         //
@@ -151,29 +158,40 @@ public class Server
         if (reqType == ReqType.RoomMake)
         {
             string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
-            Console.WriteLine("신청한 방이름 " + roomName);
+            Console.WriteLine("신청한 방이름 : " + roomName);
 
             /*
              * 방 만들기 리스폰스- 응답타입, 방참가 여부, 생성-참가 되었다면 참가자 수, 참가자 정보
              */
+            //최초 생성이면 만들고
             if (roomList.ContainsKey(roomName) == false)
             {
-                roomList.Add(roomName, new List<AsyncObject>());
+                RoomData createRoom = new RoomData();
+                roomList.Add(roomName, createRoom);
             }
-            roomList[roomName].Add(_obj);
-            byte[] parti = new byte[roomList[roomName].Count];
-            for (int i = 0; i < roomList[roomName].Count; i++)
+            //있는데 방상태가 play이면 불가
+            if (roomList[roomName].roomState == RoomState.Play)
             {
-                parti[i] = (byte)roomList[roomName][i].numbering;
+                Console.WriteLine("방참가 불가 코드 발송");
+                byte[] joinFailCode = new byte[] { (byte)ReqType.RoomMake, failCode };
+                _obj.WorkingSocket.Send(joinFailCode);
+                return;
             }
-            byte[] roomCode = new byte[] { (byte)ReqType.RoomMake, 1, (byte)roomList[roomName].Count };
+
+            roomList[roomName].AddParty(_obj);
+            List<AsyncObject> claList = roomList[roomName].GetParty();
+            byte[] parti = new byte[claList.Count];
+            for (int i = 0; i < claList.Count; i++)
+            {
+                parti[i] = (byte)claList[i].numbering;
+            }
+            byte[] roomCode = new byte[] { (byte)ReqType.RoomMake, 1, (byte)claList.Count };
 
             byte[] response = roomCode.Concat(parti).ToArray();
 
-            List<AsyncObject> pati = roomList[roomName];
-            for (int i = 0; i < pati.Count; i++)
+            for (int i = 0; i < claList.Count; i++)
             {
-                pati[i].WorkingSocket.Send(response);
+                claList[i].WorkingSocket.Send(response);
             }
         }
 
@@ -181,7 +199,7 @@ public class Server
         {
             string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
             Console.WriteLine("시작 신청한 방이름 " + roomName);
-            List<AsyncObject> pati = roomList[roomName];
+            List<AsyncObject> pati = roomList[roomName].GetParty();
             IPEndPoint captain = (IPEndPoint)pati[0].WorkingSocket.RemoteEndPoint;
             byte[] captainAddress = captain.Address.GetAddressBytes();
             byte[] roomCode = new byte[] { (byte)ReqType.RoomStart, 1, (byte)captainAddress.Length };
@@ -191,6 +209,13 @@ public class Server
                 response[1] = (byte)i;
                 pati[i].WorkingSocket.Send(response);
             }
+
+            roomList[roomName].ChangeState(RoomState.Play);
+        }
+        else if(reqType == ReqType.Close)
+        {
+            Console.WriteLine("종료 요청 받음");
+            AddRemoveSokect(_obj.numbering);
         }
     }
 
