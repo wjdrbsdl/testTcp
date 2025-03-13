@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using testTcp;
@@ -13,27 +14,24 @@ public enum RoomState
 public class RoomData
 {
     public RoomState roomState = RoomState.Ready;
-    public List<Server.AsyncObject> clientList;
-
-    public RoomData()
-    {
-        clientList = new List<Server.AsyncObject>();
-    }
-
-    public void AddParty(Server.AsyncObject _obj)
-    {
-        clientList.Add(_obj);
-    }
-
-    public List<Server.AsyncObject> GetParty()
-    {
-        return clientList;
-    }
+    public IPAddress roomServerIP;
+    public int curCount = 0;
+    public int maxCount = 4;
 
     public void ChangeState(RoomState _state)
     {
         Console.WriteLine("방 상태 변경 "+_state);
         roomState = _state;
+    }
+
+    public void Enter()
+    {
+        curCount++;
+    }
+
+    public void Out()
+    {
+        curCount--;
     }
 }
 
