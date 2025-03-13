@@ -10,7 +10,7 @@ using System.IO;
 
 public enum ReqType
 {
-    RoomMake, RoomReJoin, RoomStart, RoomOut, Close
+    RoomMake, RoomReJoin, RoomStart, RoomOut, Close, RoomState, RoomCount
 }
 
 public enum MeetState
@@ -46,7 +46,7 @@ public class Server
         }
         catch (Exception e)
         {
-            Console.WriteLine( "연결 실패");
+            Console.WriteLine("연결 실패");
         }
     }
 
@@ -94,7 +94,7 @@ public class Server
     {
         try
         {
-            
+
             AsyncObject obj = (AsyncObject)ar.AsyncState;
             int received = obj.WorkingSocket.EndReceive(ar);
             byte[] buffer = new byte[received];
@@ -141,7 +141,7 @@ public class Server
                         connectedClientList[x].WorkingSocket.Dispose();
 
                         connectedClientList.RemoveAt(x);
-                        Console.WriteLine(numbering+"소켓 제거 남은 수 "+connectedClientList.Count);
+                        Console.WriteLine(numbering + "소켓 제거 남은 수 " + connectedClientList.Count);
                         break;
                     }
                 }
@@ -159,17 +159,19 @@ public class Server
         {
             string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
             Console.WriteLine("신청한 방이름 : " + roomName);
-
+            IPAddress roomServerIP = ((IPEndPoint)_obj.WorkingSocket.RemoteEndPoint).Address;
+            int roomPerson = 0;
             /*
              * 방 만들기 리스폰스- 응답타입, 방참가 여부, 생성-참가 되었다면 참가자 수, 참가자 정보
              */
-            //최초 생성이면 만들고
+            //최초 생성이면 로비 서버 데이터에 만들고
             if (roomList.ContainsKey(roomName) == false)
             {
                 RoomData createRoom = new RoomData();
                 roomList.Add(roomName, createRoom);
+                createRoom.roomServerIP = roomServerIP;
             }
-            //있는데 방상태가 play이면 불가
+            //있으면 방 데이터에서 참가 여부 가져와서 반환하고
             if (roomList[roomName].roomState == RoomState.Play)
             {
                 Console.WriteLine("방참가 불가 코드 발송");
@@ -178,44 +180,54 @@ public class Server
                 return;
             }
 
-            roomList[roomName].AddParty(_obj);
-            List<AsyncObject> claList = roomList[roomName].GetParty();
-            byte[] parti = new byte[claList.Count];
-            for (int i = 0; i < claList.Count; i++)
-            {
-                parti[i] = (byte)claList[i].numbering;
-            }
-            byte[] roomCode = new byte[] { (byte)ReqType.RoomMake, 1, (byte)claList.Count };
+            //방 데이터 만들어놓고, 방 참가할 수 있도록 요청한 애 한테 정보 전달
+            /*
+             * [0] 응답 코드
+             * [1] 룸의 현재 인원 - 0이면 자신이 방장
+             * [2] 아이피 주소 길이 
+             * [3] 방 이름 길이 
+             * [4] 4번부터 2번 만큼
+             * [4+[2]] 부터 [3] 만큼
+             */
 
-            byte[] response = roomCode.Concat(parti).ToArray();
+            byte[] roomAddress = roomList[roomName].roomServerIP.GetAddressBytes(); //룸 방장 ip
+            byte[] roomNameByte = Encoding.Unicode.GetBytes(roomName);
+            byte[] roomCode = new byte[] { (byte)ReqType.RoomMake, (byte)roomList[roomName].curCount, (byte)roomAddress.Length, (byte)roomNameByte.Length };
+            byte[] addRoomAddress = roomCode.Concat(roomAddress).ToArray();
+            byte[] finalRes = addRoomAddress.Concat(roomNameByte).ToArray();
 
-            for (int i = 0; i < claList.Count; i++)
-            {
-                claList[i].WorkingSocket.Send(response);
-            }
+            _obj.WorkingSocket.Send(finalRes);
         }
-
         else if (reqType == ReqType.RoomStart)
         {
-            string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
-            Console.WriteLine("시작 신청한 방이름 " + roomName);
-            List<AsyncObject> pati = roomList[roomName].GetParty();
-            IPEndPoint captain = (IPEndPoint)pati[0].WorkingSocket.RemoteEndPoint;
-            byte[] captainAddress = captain.Address.GetAddressBytes();
-            byte[] roomCode = new byte[] { (byte)ReqType.RoomStart, 1, (byte)captainAddress.Length };
-            byte[] response = roomCode.Concat(captainAddress).ToArray();
-            for (int i = 0; i < pati.Count; i++)
-            {
-                response[1] = (byte)i;
-                pati[i].WorkingSocket.Send(response);
-            }
 
-            roomList[roomName].ChangeState(RoomState.Play);
         }
-        else if(reqType == ReqType.Close)
+        else if (reqType == ReqType.Close)
         {
             Console.WriteLine("종료 요청 받음");
             AddRemoveSokect(_obj.numbering);
+        }
+        else if (reqType == ReqType.RoomState)
+        {
+            Console.WriteLine((RoomState)_reqData[1] + "로 변경 요청 들어옴");
+        }
+        else if (reqType == ReqType.RoomCount)
+        {
+            Console.WriteLine("룸 인원 변경 요청 들어옴");
+            /*
+            * [0] 요청타입
+            * [1] 현재 유저 수
+            * [2] 방 이름 길이
+            * [3] 부터 방 제목들
+            */
+            int roomCount = _reqData[1];
+            int roomNameLength = _reqData[2];
+            string roomNameStr = Encoding.Unicode.GetString(_reqData, 3, _reqData[2]);
+            if (roomList.ContainsKey(roomNameStr))
+            {
+                roomList[roomNameStr].curCount = roomCount;
+                Console.WriteLine(roomNameStr + "방 인원 수 변경 " + roomCount.ToString());
+            }
         }
     }
 
