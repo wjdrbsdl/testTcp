@@ -74,7 +74,7 @@ public class RoomClient
     }
 
     #region 방 생성 진입
-    private void ReqRoomJoin(string _roomName = "테스트로 아무거나 써보기")
+    private void ReqRoomJoin(string _roomName = "테스트 방 이름")
     {
         Console.WriteLine("참가 신청");
         string roomName = _roomName;
@@ -144,6 +144,7 @@ public class RoomClient
         PlayerClient playerClient = new PlayerClient(ip, 5001);
         playerClient.Connect();
 
+        meetState = MeetState.Room;
     }
     #endregion
 
@@ -165,15 +166,6 @@ public class RoomClient
                 if (command == "j")
                 {
                     ReqRoomJoin();
-                }
-
-            }
-            else if (meetState == MeetState.Room)
-            {
-                string command = Console.ReadLine();
-                if (command == "s")
-                {
-                  
                 }
 
             }
