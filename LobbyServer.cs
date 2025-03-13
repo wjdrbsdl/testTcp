@@ -140,6 +140,11 @@ public class LobbyServer
         {
             ResChangeRoomUserCount(_reqData);
         }
+        else if (reqType == ReqLobbyType.ClientNumber)
+        {
+            byte[] response = new byte[] { (byte)ReqLobbyType.ClientNumber, (byte)_obj.numbering };
+            _obj.WorkingSocket.Send(response);
+        }
     }
 
     #region 응답 함수

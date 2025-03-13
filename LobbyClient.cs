@@ -36,12 +36,11 @@ public class LobbyClient
     {
         try
         {
-            //연결 되었으면 자료 받을 준비, 상태 준비
-
-            byte[] objNumber = _result.AsyncState as byte[];
-            Console.WriteLine("클라 연결 콜백" + objNumber[0].ToString());
+            Console.WriteLine("클라 연결 콜백" );
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
+            //접속했으면 접속한 넘버링 요구
+            ReqClientNumber();
         }
         catch
         {
@@ -64,7 +63,7 @@ public class LobbyClient
             }
             else if(reqType == ReqLobbyType.ClientNumber)
             {
-                id = receiveBuff[1];
+                ResClientNumber(receiveBuff);
             }
 
             if(clientSocket.Connected)
@@ -156,6 +155,23 @@ public class LobbyClient
         Console.WriteLine("종료 요청");
         byte[] reqClaDisconnect = new byte[] { (byte)ReqLobbyType.Close };
         clientSocket.Send(reqClaDisconnect);
+    }
+
+    private void ReqClientNumber()
+    {
+        byte[] reqClientNumber = new byte[] { (byte)ReqLobbyType.ClientNumber };
+        clientSocket.Send(reqClientNumber);
+    }
+
+    private void ResClientNumber(byte[] receiveBuff)
+    {
+        /*
+         * [0] 요청타입
+         * [1] 넘버링
+         */
+
+        id = receiveBuff[1];
+        Console.WriteLine("클라 넘버 " + id);
     }
 
     bool isLobby = true;
