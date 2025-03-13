@@ -21,7 +21,7 @@ namespace testTcp
 
         public void Start()
         {
-            Console.WriteLine("룸 서버 시작");
+            ColorConsole.ConsoleColor("룸 서버 시작");
             linkSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 5001);
             linkSocket.Bind(endPoint);
@@ -48,7 +48,7 @@ namespace testTcp
         {
             try
             {
-                Console.WriteLine("룸 서버 수락");
+                ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
                 ClaInfo newCla = new ClaInfo(100, client);
                 number++;
@@ -68,7 +68,7 @@ namespace testTcp
         {
             try
             {
-                Console.WriteLine("룸     서버로서 리시브");
+                ColorConsole.ConsoleColor("룸     서버로서 리시브");
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
                 byte[] recevieBuff = cla.buffer;
                 int received = cla.workingSocket.EndReceive(ar);
@@ -134,7 +134,7 @@ namespace testTcp
 
         public void ExitClient(byte[] _receiveData)
         {
-            Console.WriteLine($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
+            ColorConsole.ConsoleColor($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
             for (int i = 0; i < roomUser.Count; i++)
             {
                 if (roomUser[i].ID == _receiveData[1])
@@ -163,7 +163,7 @@ namespace testTcp
             }
             catch
             {
-                Console.WriteLine("방 서버의 로비서버 접속 실패");
+                ColorConsole.ConsoleColor("방 서버의 로비서버 접속 실패");
             }
         }
 
@@ -193,14 +193,14 @@ namespace testTcp
             }
             catch
             {
-                Console.WriteLine("방수 변경 콜백 실패");
+                ColorConsole.ConsoleColor("방수 변경 콜백 실패");
             }
         }
 
         public void ReqChangeRoomCount()
         {
 
-            Console.WriteLine("방 인원 변경 함수 호출");
+            ColorConsole.ConsoleColor("방 인원 변경 함수 호출");
             /*
              * [0] 요청타입
              * [1] 현재 유저 수

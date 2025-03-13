@@ -108,7 +108,7 @@ public class LobbyClient
 
     private void ResRoomJoin(byte[] _receiveData)
     {
-        Console.WriteLine("r방에 대한 정보를 받음" + _receiveData[1]);
+        Console.WriteLine("방에 대한 정보를 받음. 방 인원 : " + _receiveData[1]);
         //룸메이크 요청에 대한 대답이라면
         /*
               * [0] 응답 코드
@@ -144,7 +144,7 @@ public class LobbyClient
         int roomNameLength = _receiveData[3];
         string roomName = Encoding.Unicode.GetString(_receiveData, ipIdx + ipLength, _receiveData[3]);
 
-        Console.WriteLine(roomName + "r방에서 순서 " + _receiveData[1].ToString());
+        Console.WriteLine(roomName + "방에서 내 순서 :" + _receiveData[1].ToString());
 
         isLobby = false; //게임으로 이동
         int roomPersonCount = _receiveData[1];

@@ -129,12 +129,12 @@ public class LobbyServer
         }
         else if (reqType == ReqLobbyType.Close)
         {
-            Console.WriteLine("종료 요청 받음");
+            ColorConsole.ConsoleColor("종료 요청 받음");
             AddRemoveSokect(_obj.numbering);
         }
         else if (reqType == ReqLobbyType.RoomState)
         {
-            Console.WriteLine((RoomState)_reqData[1] + "로 변경 요청 들어옴");
+           ColorConsole.ConsoleColor((RoomState)_reqData[1] + "로 변경 요청 들어옴");
         }
         else if (reqType == ReqLobbyType.RoomUserCount)
         {
@@ -151,7 +151,9 @@ public class LobbyServer
     private void ResRoomMake(AsyncObject _obj, byte[] _reqData)
     {
         string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
-        Console.WriteLine("신청한 방이름 : " + roomName);
+
+        ColorConsole.ConsoleColor("신청한 방이름 : " + roomName);
+      
         IPAddress roomServerIP = ((IPEndPoint)_obj.WorkingSocket.RemoteEndPoint).Address;
         int roomPerson = 0;
         /*
@@ -167,7 +169,7 @@ public class LobbyServer
         //있으면 방 데이터에서 참가 여부 가져와서 반환하고
         if (roomList[roomName].roomState == RoomState.Play)
         {
-            Console.WriteLine("방참가 불가 코드 발송");
+            ColorConsole.ConsoleColor("방참가 불가 코드 발송");
             byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMake, failCode };
             _obj.WorkingSocket.Send(joinFailCode);
             return;
@@ -268,6 +270,7 @@ public class LobbyServer
 
         //mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
     }
+
 
 
     #region 소켓리스트에서 제거
