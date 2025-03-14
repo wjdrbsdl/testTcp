@@ -22,12 +22,13 @@ public class CardRule
     public EMixtureType CheckValidRule(List<CardData> _list, out TMixture _mixtureValue)
     {
         int cardCount = _list.Count;
-        TMixture mixtureValue = new TMixture(EMixtureType.None, CardClass.Spade, 0);
+        TMixture mixtureValue = new TMixture();
         if (cardCount == 1)
         {
             mixtureValue.mixture = EMixtureType.OnePair;
             mixtureValue.mainRealValue = _list[0].realValue;
             mixtureValue.mainCardClass = _list[0].cardClass;
+            mixtureValue.cardCount = 1;
             _mixtureValue = mixtureValue;
             return EMixtureType.OnePair;
         }
@@ -70,6 +71,7 @@ public class CardRule
             {
                 mixtureValue.mainCardClass = _list[1].cardClass;
             }
+            mixtureValue.cardCount = 2;
             _mixtureValue = mixtureValue;
             return true;
         }
@@ -85,6 +87,7 @@ public class CardRule
             mixtureValue.mixture = EMixtureType.Triple;
             mixtureValue.mainCardClass = CardClass.Dia;//상관없음
             mixtureValue.mainRealValue = _list[0].realValue;
+            mixtureValue.cardCount = 3;
             _mixtureValue = mixtureValue;
             return true;
         }
@@ -99,6 +102,7 @@ public class CardRule
         //스트레이트인가
         int straightNum = _list[0].realValue;
         bool isStraight = true;
+        tmixtureValue.cardCount = 5;
         for (int i = 1; i < _list.Count; i++)
         {
             if (_list[i].realValue != straightNum + 1)
@@ -215,7 +219,20 @@ public class CardRule
         return EMixtureType.None;
     }
 
-    int CompareCardClass(CardClass _first, CardClass _second)
+    public bool TryCompare(TMixture _oneValue, TMixture _twoValue, out int _compareValue)
+    {
+        //사용된 카드 수가 다르면 - 조합 수치가 다르면 비교 불가
+        if (_oneValue.cardCount != _twoValue.cardCount)
+        {
+            _compareValue = 0;
+            return false;
+        }
+
+        _compareValue = TMixture.Compare(_oneValue, _twoValue);
+        return true;
+    }
+
+    public static int CompareCardClass(CardClass _first, CardClass _second)
     {
         return ((int)_first - (int)_second) * -1;
     }
@@ -227,18 +244,91 @@ public struct TMixture
     public EMixtureType mixture; //조합
     public CardClass mainCardClass; //기준 무늬
     public int mainRealValue; //기준 가치
+    public int cardCount; //사용에 쓰인 카드 수 
 
     public TMixture()
     {
         mixture = EMixtureType.None;
         mainCardClass = CardClass.Spade;
         mainRealValue = 0;
+        cardCount = 0;
     }
 
-    public TMixture(EMixtureType _mixtureType, CardClass _class, int _realValue)
+    public static int Compare(TMixture _one, TMixture _two)
     {
-        mixture = _mixtureType;
-        mainCardClass = _class;
-        mainRealValue = _realValue;
+        //비교 가능한 것들만 들어올것
+
+        EMixtureType oneType = _one.mixture;
+        EMixtureType twoType = _two.mixture;
+
+        if (oneType != twoType)
+        {
+            //두타입이 다르면 5종 끼리의 조합
+            //enum에 작은것부터 명시 해놔서 enum값 뺀거 반환하면됨.
+            return (int)_one.mixture - (int)_two.mixture;
+        }
+
+        int compareValue = 0;
+        //여기부턴 같은거끼리의 비교
+        switch (oneType)
+        {
+            case EMixtureType.OnePair:
+                //가치 비교
+                compareValue = _one.mainRealValue - _two.mainRealValue;
+                if (compareValue == 0)
+                {
+                    //무늬 비교
+                    compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
+                }
+                return compareValue;
+            case EMixtureType.TwoPair:
+                //가치 비교
+                compareValue = _one.mainRealValue - _two.mainRealValue;
+                if (compareValue == 0)
+                {
+                    //무늬 비교
+                    compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
+                }
+                return compareValue;
+            case EMixtureType.Triple:
+                //가치 비교, 값이같은경우는 있을수 없음. 
+                return _one.mainRealValue - _two.mainRealValue;
+            case EMixtureType.Straight:
+                //가치 비교
+                compareValue = _one.mainRealValue - _two.mainRealValue;
+                if (compareValue == 0)
+                {
+                    //숫자가 같으면 큰 무늬
+                    compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
+                }
+                return compareValue;
+            case EMixtureType.Flush:
+                //무늬 비교
+                compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
+                if(compareValue == 0)
+                {
+                    //무늬 같으면 숫자 비교
+                    compareValue = _one.mainRealValue - _two.mainRealValue;
+                }
+                return compareValue;
+            case EMixtureType.FullHouse:
+                //트리플의 가치라서 값만 비교
+                compareValue = _one.mainRealValue - _two.mainRealValue;
+                return compareValue;
+            case EMixtureType.FourCard:
+                //네장의 가치만 비교
+                compareValue = _one.mainRealValue - _two.mainRealValue;
+                return compareValue;
+            case EMixtureType.StraightFlush:
+                //무늬 비교
+                compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
+                if (compareValue == 0)
+                {
+                    //무늬 같으면 숫자 비교
+                    compareValue = _one.mainRealValue - _two.mainRealValue;
+                }
+                return compareValue;
+        }
+        return 0;
     }
 }
