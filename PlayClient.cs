@@ -18,17 +18,20 @@ public class PlayerData
 
 public class PlayClient
 {
+    #region 변수
     public Socket clientSocket;
     public int port;
     public byte[] ip;
     public int id;
     public MeetState meetState = MeetState.Lobby;
     public string state = "";
-    public List<CardData> haveCardList;
-    public List<CardData> giveCardList;
-    public List<CardData> selecetCardList;
+    public List<CardData> haveCardList; //내가 들고 있는 카드
+    public List<CardData> giveCardList; //전에 내가 냈던 카드
+    public List<CardData> selecetCardList; //이번턴에 내가 선택한 카드
     public bool isMyTurn = false;
     public bool isGameStart = false;
+    #endregion
+
     public PlayClient(byte[] _ip, int _port, int _id = 0)
     {
         ip = _ip;
@@ -114,6 +117,77 @@ public class PlayClient
         }
     }
 
+    #region 로직 파트
+    bool isChatOpen = false;
+    public void EnterMessege()
+    {
+        //채팅 기능 한번만 오픈되도록
+        if (isChatOpen == true)
+        {
+            return;
+        }
+
+        isChatOpen = true;
+        Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
+        while (true)
+        {
+            // Console.WriteLine("플클 와일문");
+            string messege = Console.ReadLine();
+
+            if (isGameStart == true)
+            {
+                GiveCardCommand();
+                break;
+            }
+
+            if (messege == "q")
+            {
+                ReqRoomOut();
+                return;
+            }
+            else if (messege == "s")
+            {
+                ReqGameStart();
+                continue;
+            }
+
+            string chatMeseege = " " + messege;
+
+            ReqChat(chatMeseege);
+        }
+
+    }
+
+    private void GiveCardCommand()
+    {
+        Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
+        while (true)
+        {
+            string card = Console.ReadLine();
+            selecetCardList = new();
+            if (isMyTurn == false)
+            {
+                Console.WriteLine("자기 차례가 아닙니다.");
+                continue;
+            }
+            if (Int32.TryParse(card, out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
+            {
+                Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
+                selecetCardList.Add(haveCardList[selectCard]);
+                ReqPutDownCard(selecetCardList);
+            }
+            else
+            {
+                Console.WriteLine("유효 숫자가 아닙니다.");
+            }
+
+        }
+    }
+
+    #endregion
+
+
+    #region 통신 파트
     #region 게임 시작
     private void ReqGameStart()
     {
@@ -136,7 +210,16 @@ public class PlayClient
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
             CardData card = new CardData((CardClass)_resDate[i], _resDate[i + 1]);
             haveCardList.Add(card);
-            Console.WriteLine($"받은 카드 {card.cardClass} : {card.num}");
+        }
+        ConsoleMyCardList();
+    }
+
+    private void ConsoleMyCardList()
+    {
+        for (int i = 0; i < haveCardList.Count; i ++)
+        {
+            //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
+            Console.WriteLine($"보유 카드 {haveCardList[i].cardClass} : {haveCardList[i].num}");
         }
     }
 
@@ -185,73 +268,7 @@ public class PlayClient
     }
     #endregion
 
-
-    bool isChatOpen = false;
-    public void EnterMessege()
-    {
-        //채팅 기능 한번만 오픈되도록
-        if (isChatOpen == true)
-        {
-            return;
-        }
-
-        isChatOpen = true;
-        Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
-        while (true)
-        {
-           // Console.WriteLine("플클 와일문");
-            string messege = Console.ReadLine();
-
-            if(isGameStart == true)
-            {
-                GiveCardCommand();
-                break;
-            }
-
-            if (messege == "q")
-            {
-                ReqRoomOut();
-                return;
-            }
-            else if(messege == "s")
-            {
-                ReqGameStart();
-                continue;
-            }
-
-            string chatMeseege = " " + messege;
- 
-            ReqChat(chatMeseege);
-        }
-
-    }
-
-    private void GiveCardCommand()
-    {
-        Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
-        while (true)
-        {
-            string card = Console.ReadLine();
-            selecetCardList = new();
-            if(isMyTurn == false)
-            {
-                Console.WriteLine("자기 차례가 아닙니다.");
-                continue;
-            }
-            if(Int32.TryParse(card, out int selectCard) && 0<=selectCard && selectCard<haveCardList.Count)
-            {
-                Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
-                selecetCardList.Add(haveCardList[selectCard]);
-                ReqPutDownCard(selecetCardList);
-            }
-            else
-            {
-                Console.WriteLine("유효 숫자가 아닙니다.");
-            }
-          
-        }
-    }
-
+    #region 카드 제출
     private void ReqPutDownCard(List<CardData> _cardDataList)
     {
         /*
@@ -283,13 +300,35 @@ public class PlayClient
         * [2] 낸 카드 숫자
         * [3] 카드 구성
         */
-        Console.WriteLine(_data[1]+"번 유저가 제출한 카드");
+        Console.WriteLine(_data[1]+" 유저가 제출한 카드");
         for (int i = 3; i < _data.Length; i+=2)
         {
-            Console.WriteLine($"{(CardClass)_data[i]}:{_data[i+1]}");
+            CardClass cardClass = (CardClass)_data[i];
+            int num = _data[i + 1];
+            Console.WriteLine($"{cardClass}:{num}");
+            //만약 내가냈던 카드면
+            if (_data[1] == id)
+            {
+                for (int myCardIndex = 0; myCardIndex < haveCardList.Count; myCardIndex++)
+                {
+                    if (haveCardList[myCardIndex].Compare(cardClass, num) == 0)
+                    {
+                        //내가 보유한 카드에서 제거
+                        haveCardList.RemoveAt(myCardIndex);
+                        break;
+                    }
+                }
+            }
+
+        }
+        if (_data[1] == id)
+        {
+            ConsoleMyCardList();
         }
     }
+    #endregion
 
+    #region 턴 정하기
     private void ResTurnPlayer(byte[] _data)
     {
         /*
@@ -302,7 +341,9 @@ public class PlayClient
             Console.WriteLine("내 차례");
         }
     }
+    #endregion
 
+    #region 채팅 
     private void ReqChat(string msg)
     {
         byte[] chatByte = Encoding.Unicode.GetBytes(msg);
@@ -332,6 +373,7 @@ public class PlayClient
         Console.WriteLine(split);
         
     }
-
+    #endregion
+    #endregion
 }
 
