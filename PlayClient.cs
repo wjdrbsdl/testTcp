@@ -295,12 +295,12 @@ public class PlayClient
             //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
             foreach (CardData card in selecetCardList)
             {
-                if (card.Compare(CardData.minClass, CardData.minNum) == 0)
+                if (card.Compare(CardData.minClass, CardData.minRealValue) == 0)
                 {
                     return true;
                 }
             }
-            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
+            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minRealValue}을 포함해야함");
             return false;
         }
 
@@ -379,11 +379,9 @@ public class PlayClient
         putDownList.Clear();
     }
 
-    private void AddPutDownCard(CardClass _cardClass, int _num)
+    private void AddPutDownCard(CardData _card)
     {
-        Console.WriteLine($"{_cardClass}:{_num}");
-        CardData card = new CardData(_cardClass, _num);
-        putDownList.Add(card);
+        putDownList.Add(_card);
     }
 
     private void CountTurn()
@@ -526,14 +524,15 @@ public class PlayClient
         {
             CardClass cardClass = (CardClass)_data[i];
             int num = _data[i + 1];
-            AddPutDownCard(cardClass, num);
+            CardData card = new CardData(cardClass, num); //카드 생성
+            AddPutDownCard(card);
 
             //만약 내가냈던 카드면
             if (_data[1] == id)
             {
                 for (int myCardIndex = 0; myCardIndex < haveCardList.Count; myCardIndex++)
                 {
-                    if (haveCardList[myCardIndex].Compare(cardClass, num) == 0)
+                    if (haveCardList[myCardIndex].CompareTo(card) == 0)
                     {
                         //내가 보유한 카드에서 제거
                         haveCardList.RemoveAt(myCardIndex);

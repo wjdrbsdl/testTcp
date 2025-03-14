@@ -204,7 +204,7 @@ namespace testTcp
                     giveCardIndex++;
                     cardList.Add((byte)selectCard.cardClass);
                     cardList.Add((byte)selectCard.num);
-                    if (selectCard.Compare(CardClass.Spade, 3) == 0)
+                    if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
                     {
                         turnId = roomUser[userIndex].ID; //서버에서 누가 시작인지 알고 있을것. 
                     }
