@@ -184,11 +184,12 @@ public class PlayClient
                 Console.WriteLine("자기 차례가 아닙니다.");
                 continue;
             }
-            string[] selectCards = card.Split(",");
+            card = card.Replace(" ","");//공백제거
+            string[] selectCards = card.Split(","); //콤마로 구별
             int validCount = 0;
             for (int i = 0; i < selectCards.Length; i++)
             {
-                if (Int32.TryParse(card, out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
+                if (Int32.TryParse(selectCards[i], out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
                 {
                     Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
                     selecetCardList.Add(haveCardList[selectCard]);
@@ -201,6 +202,7 @@ public class PlayClient
                 }
 
             }
+          
             if(validCount != selectCards.Length)
             {
                 //잘못 입력된게 있어서 패스
@@ -248,11 +250,12 @@ public class PlayClient
 
     private bool CheckAllPass()
     {
+        Console.WriteLine("올 패스인지 체크");
         giveCardList.Sort();
         putDownList.Sort();
      
         //정렬해서 냈던 카드가 있으면 올 패스 된거.
-        if (giveCardList[0].Compare(putDownList[0]) == 0)
+        if (giveCardList[0].CompareTo(putDownList[0]) == 0)
         {
             return true;
         }
@@ -263,6 +266,8 @@ public class PlayClient
 
     private bool IsBiggerPutDown()
     {
+
+        Console.WriteLine("전 것보다 큰건지 체크");
         putDownList.Sort();
         selecetCardList.Sort();
 
