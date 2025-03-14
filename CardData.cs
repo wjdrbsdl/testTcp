@@ -11,29 +11,35 @@ public enum CardClass
     Spade, Dia, Heart, Clover
 }
 
-public class CardData : Comparer<CardData>, IComparable<CardData>
+public class CardData : IComparable<CardData>
 {
     public static CardClass minClass = CardClass.Spade;
     public static int minNum = 3;
     public CardClass cardClass = CardClass.Spade;
     public int num;
+    public int realValue;
 
 
     public CardData(CardClass _cardClass, int _num)
     {
         cardClass = _cardClass;
         num = _num;
+        realValue = num;
+        if(num == 1 || num == 2)
+        {
+            realValue += 13;
+        }
     }
 
-    public int Compare(CardClass _class, int _num)
+    public int Compare(CardClass _class, int _realValue)
     {
-        if (num == _num)
+        if (realValue == _realValue)
         {
             //무늬가 강한것부터 0으로 시작되어있어서, 뺏을 때의 값에 역순을 곱해서 크기 표현
             return ((int)cardClass - (int)_class) * -1;
         }
 
-        return num - _num;
+        return realValue - _realValue;
     }
 
     public int CompareTo(CardData _card)
@@ -41,24 +47,13 @@ public class CardData : Comparer<CardData>, IComparable<CardData>
         if (_card == null)
             return 0;
 
-        if (num == _card.num)
+        if (realValue == _card.realValue)
         {
             //무늬가 강한것부터 0으로 시작되어있어서, 뺏을 때의 값에 역순을 곱해서 크기 표현
             return ((int)cardClass - (int)_card.cardClass) * -1;
         }
 
-        return num - _card.num;
-    }
-
-    public override int Compare(CardData? x, CardData? y)
-    {
-        if(x.num == y.num)
-        {
-            //무늬가 강한것부터 0으로 시작되어있어서, 뺏을 때의 값에 역순을 곱해서 크기 표현
-            return ((int)x.cardClass - (int)y.cardClass) * -1;
-        }
-
-        return x.num - y.num;
+        return realValue - _card.realValue;
     }
 
   }
