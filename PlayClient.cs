@@ -28,8 +28,11 @@ public class PlayClient
     public List<CardData> haveCardList; //내가 들고 있는 카드
     public List<CardData> giveCardList; //전에 내가 냈던 카드
     public List<CardData> selecetCardList; //이번턴에 내가 선택한 카드
+    public List<CardData> putDownList; //바닥에 깔린 카드
     public bool isMyTurn = false;
     public bool isGameStart = false;
+    public int gameTurn = 0; //카드 제출이 진행된 턴 1번부터
+
     #endregion
 
     public PlayClient(byte[] _ip, int _port, int _id = 0)
@@ -119,7 +122,18 @@ public class PlayClient
 
     #region 로직 파트
     bool isChatOpen = false;
-    public void EnterMessege()
+    private void SetNewGame()
+    {
+        //보유 카드는 통신응답에서 진행
+        giveCardList = new();
+        selecetCardList = new();
+        putDownList = new();
+        gameTurn = 0;
+        isMyTurn = false;
+        isGameStart = true;
+    }
+
+    private void EnterMessege()
     {
         //채팅 기능 한번만 오픈되도록
         if (isChatOpen == true)
@@ -170,20 +184,107 @@ public class PlayClient
                 Console.WriteLine("자기 차례가 아닙니다.");
                 continue;
             }
-            if (Int32.TryParse(card, out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
+            string[] selectCards = card.Split(",");
+            int validCount = 0;
+            for (int i = 0; i < selectCards.Length; i++)
             {
-                Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
-                selecetCardList.Add(haveCardList[selectCard]);
+                if (Int32.TryParse(card, out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
+                {
+                    Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
+                    selecetCardList.Add(haveCardList[selectCard]);
+                    validCount++;
+                }
+                else
+                {
+                    Console.WriteLine("유효 숫자가 아닙니다.");
+                    break;
+                }
+
+            }
+            if(validCount != selectCards.Length)
+            {
+                //잘못 입력된게 있어서 패스
+                continue;
+            }
+            if (CheckSelectCard())
+            {
+                //낼수 있는 카드조합이면 제출
                 ReqPutDownCard(selecetCardList);
             }
-            else
-            {
-                Console.WriteLine("유효 숫자가 아닙니다.");
-            }
-
+            
         }
     }
 
+    private bool CheckSelectCard()
+    {
+        //선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
+        if(gameTurn == 1)
+        {
+            //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
+            foreach(CardData card in haveCardList)
+            {
+                if(card.Compare(CardData.minClass, CardData.minNum) == 0)
+                {
+                    return true;
+                }
+            }
+            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
+            return false;
+        }
+        //처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
+        if (CheckAllPass())
+        {
+            return true;
+        }
+
+        //남이 낸거라면 그것보다 큰걸 내야함
+        if (IsBiggerPutDown())
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool CheckAllPass()
+    {
+        giveCardList.Sort();
+        putDownList.Sort();
+     
+        //정렬해서 냈던 카드가 있으면 올 패스 된거.
+        if (giveCardList[0].Compare(putDownList[0]) == 0)
+        {
+            return true;
+        }
+
+        return false;
+   
+    }
+
+    private bool IsBiggerPutDown()
+    {
+        putDownList.Sort();
+        selecetCardList.Sort();
+
+        return true;
+    }
+
+    private void ResetPutDownCard()
+    {
+        putDownList.Clear();
+    }
+
+    private void AddPutDownCard(CardClass _cardClass, int _num)
+    {
+        Console.WriteLine($"{_cardClass}:{_num}");
+        CardData card = new CardData(_cardClass, _num);
+        putDownList.Add(card);
+    }
+
+    private void CountTurn()
+    {
+        gameTurn++;
+    }
     #endregion
 
 
@@ -203,14 +304,14 @@ public class PlayClient
          * [1] 카드 장수
          * [2] 번부터 2개씩 카드가 생성
          */
-        isMyTurn = false;
-        isGameStart = true;
+        haveCardList = new();
         for (int i = 2; i < _resDate.Length; i+=2)
         {
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
             CardData card = new CardData((CardClass)_resDate[i], _resDate[i + 1]);
             haveCardList.Add(card);
         }
+        SetNewGame();
         ConsoleMyCardList();
     }
 
@@ -300,12 +401,19 @@ public class PlayClient
         * [2] 낸 카드 숫자
         * [3] 카드 구성
         */
+        if (_data[2] == 0)
+        {
+            //낸 카드가 없으면 안함.
+            return;
+        }
+        ResetPutDownCard(); //이전 카드 클리어
         Console.WriteLine(_data[1]+" 유저가 제출한 카드");
         for (int i = 3; i < _data.Length; i+=2)
         {
             CardClass cardClass = (CardClass)_data[i];
             int num = _data[i + 1];
-            Console.WriteLine($"{cardClass}:{num}");
+            AddPutDownCard(cardClass, num);
+            
             //만약 내가냈던 카드면
             if (_data[1] == id)
             {
@@ -325,6 +433,7 @@ public class PlayClient
         {
             ConsoleMyCardList();
         }
+      
     }
     #endregion
 
@@ -340,6 +449,7 @@ public class PlayClient
         {
             Console.WriteLine("내 차례");
         }
+        CountTurn(); //턴을 지정하는건 새로운 턴이 된거
     }
     #endregion
 
