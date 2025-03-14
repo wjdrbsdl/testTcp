@@ -149,8 +149,8 @@ public class PlayClient
 
             if (isGameStart == true)
             {
-                //TestMixture();
-                GiveCardCommand();
+                TestMixture();
+                //GiveCardCommand();
                 break;
             }
 
@@ -179,11 +179,7 @@ public class PlayClient
         {
             string card = Console.ReadLine();
             selecetCardList = new();
-            if (isMyTurn == false)
-            {
-                Console.WriteLine("자기 차례가 아닙니다.");
-                continue;
-            }
+         
             card = card.Replace(" ", "");//공백제거
             string[] selectCards = card.Split(","); //콤마로 구별
             int validCount = 0;
@@ -213,9 +209,18 @@ public class PlayClient
 
             CardRule cardRule = new CardRule();
             TMixture mixtureValue = new TMixture();
-            if (cardRule.IsVarid(selecetCardList, out mixtureValue) == false)
+            if (cardRule.IsVarid(selecetCardList, out mixtureValue) == true)
             {
-               
+                CheckSelectCard();
+                {
+                    putDownList.Clear();
+                    for (int i = 0; i < selecetCardList.Count; i++)
+                    {
+                        putDownList.Add(selecetCardList[i]);
+                    }
+                
+                }
+             
             }
         }
     }
@@ -268,65 +273,96 @@ public class PlayClient
     private bool CheckSelectCard()
     {
         CardRule cardRule = new CardRule();
-        TMixture mixtureValue = new TMixture();
-        if(cardRule.IsVarid(selecetCardList, out mixtureValue) == false)
+        TMixture selectCardValue = new TMixture();
+        if(cardRule.IsVarid(selecetCardList, out selectCardValue) == false)
         {
             return false;
         }
 
-        //선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
-        if(gameTurn == 1)
+        //혼자 크기 비교 위해서 아래비교, 내가 제출한건 무조건 전걸로 진행 
+        /*
+        ////선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
+        //if(gameTurn == 1)
+        //{
+        //    //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
+        //    foreach(CardData card in selecetCardList)
+        //    {
+        //        if(card.Compare(CardData.minClass, CardData.minNum) == 0)
+        //        {
+        //            return true;
+        //        }
+        //    }
+        //    Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
+        //    return false;
+        //}
+        ////처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
+        //if (CheckAllPass())
+        //{
+        //    return true;
+        //}
+        */
+
+
+        TMixture putDownValue = new TMixture();
+        cardRule.CheckValidRule(putDownList, out putDownValue);
+
+        Console.WriteLine($"이전꺼 {putDownValue.mixture}:{putDownValue.mainCardClass}:{putDownValue.mainRealValue}" +
+            $"\n제출용 {selectCardValue.mixture}:{selectCardValue.mainCardClass}:{selectCardValue.mainRealValue}:");
+        //비교 안되는 타입이면 (앞에 낸것과 다른 유형이면) 실패
+        if(cardRule.TryCompare(putDownValue, selectCardValue, out int compareValue) == false)
         {
-            //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
-            foreach(CardData card in haveCardList)
-            {
-                if(card.Compare(CardData.minClass, CardData.minNum) == 0)
-                {
-                    return true;
-                }
-            }
-            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
+            Console.WriteLine("비교 불가");
             return false;
         }
-        //처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
-        if (CheckAllPass())
+        //compareValue는 이전꺼에서 현재껄 뺀거 - 즉 양수면 전께 큰거 
+        if(compareValue > 0)
         {
-            return true;
+            //이전것보다 작아도 실패
+            Console.WriteLine("전 보다 작다");
+            return false;
         }
+        Console.WriteLine("전 보다 크다");
 
-        //남이 낸거라면 그것보다 큰걸 내야함
-        if (IsBiggerPutDown())
-        {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     private bool CheckAllPass()
     {
+        if(putDownList.Count == 0)
+        {
+            return false;
+        }
+        Console.WriteLine("올 패스인지 체크");
+        selecetCardList.Sort();
+        putDownList.Sort();
+
+        //정렬해서 냈던 카드가 있으면 올 패스 된거.
+        for (int i = 0; i < selecetCardList.Count; i++)
+        {
+            if (selecetCardList[0].CompareTo(putDownList[0]) == 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        return false;
         Console.WriteLine("올 패스인지 체크");
         giveCardList.Sort();
         putDownList.Sort();
-     
+
         //정렬해서 냈던 카드가 있으면 올 패스 된거.
-        if (giveCardList[0].CompareTo(putDownList[0]) == 0)
+        for (int i = 0; i < giveCardList.Count; i++)
         {
-            return true;
+            if(giveCardList[0].CompareTo(putDownList[0]) == 0)
+            {
+                return true;
+            }
+            return false;
         }
 
         return false;
    
-    }
-
-    private bool IsBiggerPutDown()
-    {
-
-        Console.WriteLine("전 것보다 큰건지 체크");
-        putDownList.Sort();
-        selecetCardList.Sort();
-
-        return true;
     }
 
     private void ResetPutDownCard()
