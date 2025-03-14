@@ -184,7 +184,7 @@ public class CardRule
             _list[3].realValue == _list[4].realValue)
         {
             //같은거 3개의 숫자크기
-            tmixtureValue.mixture = EMixtureType.Straight;
+            tmixtureValue.mixture = EMixtureType.FullHouse;
             tmixtureValue.mainCardClass = _list[4].cardClass; //상관없음
             tmixtureValue.mainRealValue = _list[4].realValue;
             _mixtureValue = tmixtureValue;
@@ -304,7 +304,7 @@ public struct TMixture
             case EMixtureType.Flush:
                 //무늬 비교
                 compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
-                if(compareValue == 0)
+                if (compareValue == 0)
                 {
                     //무늬 같으면 숫자 비교
                     compareValue = _one.mainRealValue - _two.mainRealValue;
