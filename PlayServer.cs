@@ -14,7 +14,9 @@ namespace testTcp
         Ready, Start, RoomOut, Chat, 
         IDRegister, PartyData,
         ShuffleCard, PutDownCard,
-        ArrangeTurn
+        ArrangeTurn,
+        StageOver, GameOver
+
 
     }
 
@@ -45,6 +47,7 @@ namespace testTcp
             public byte[] buffer;
             public Socket workingSocket;
             public int ID = 0; //0이면 아이디를 전달받지 못한 상태
+            public int HaveCard = 0;
             public ClaInfo(int _bufferSize, Socket _claSocket)
             {
                 buffer = new byte[_bufferSize];
@@ -129,10 +132,42 @@ namespace testTcp
             else if(reqType == ReqRoomType.PutDownCard)
             {
                 AnnoucePutDownCard(_reqData); //카드제출 요청 받으면, 다른유저들에게 어떤 카드가 나왔는지 알려줌
+                if(CheckStageOver(_reqData))
+                {
+                    AnnouceStageOver();
+                    return;
+                }
                 AnnounceTurnPlayer(); //다음 차례 지정해줌 - 위의 풋다운에서 다음 차례 찾아놓음
             }
         }
 
+        private bool CheckStageOver(byte[] _putDownCardData)
+        {
+            /*
+             * [0] 요청 코드 putdownCard
+             * [1] 플레이어 id
+             * [2] 낸 카드 숫자
+             * [3] 카드 구성
+           */
+
+            //제출했던 유저 아이디
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID == _putDownCardData[1])
+                {
+                    roomUser[i].HaveCard -= _putDownCardData[2];
+
+                    if (roomUser[i].HaveCard == 0)
+                    {
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        #region 통신
         private void SendChat(byte[] msg, int _receiveNumbering)
         {
             for (int i = 0; i < roomUser.Count; i++)
@@ -210,6 +245,7 @@ namespace testTcp
                     }
                 }
                 byte[] cardByte = cardList.ToArray();
+                roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
                 roomUser[userIndex].workingSocket.Send(cardByte);
             }
 
@@ -240,10 +276,7 @@ namespace testTcp
             }
             partyData[1] = valid; //아이디가 밝혀진 애들로 수 조절해서 전달
             byte[] partyDataByte = partyData.ToArray();
-            for (int i = 0; i < roomUser.Count; i++)
-            {
-                roomUser[i].workingSocket.Send(partyDataByte);
-            }
+            SendMessege(partyDataByte);
         }
 
         private void AnnoucePutDownCard(byte[] _putDownCardData)
@@ -256,13 +289,15 @@ namespace testTcp
             */
             ColorConsole.ConsoleColor("어떤 카드 냈는지 표기");
             //전체 데이터에서 해당 유저가 가진 카드를 빼도 되고
-            //주 역할은 다음 차례 역할 지정하기 
+            //다음 차례 역할 지정하기 
+            //해당 유저가 보유한 카드에서 감소
             int turnIndex = 0;
             for (int i = 0; i < roomUser.Count; i++)
             {
                 if (roomUser[i].ID == _putDownCardData[1])
                 {
-                    turnIndex = i;
+                    //제출한 녀석을 찾아서
+                    turnIndex = i; //얘 차례 인덱스 뽑고
                 }
               
                 //낸 유저를 포함 모든 유저들에게 해당 유저가 어떤걸 냈는지 전달.
@@ -272,13 +307,39 @@ namespace testTcp
             turnId = roomUser[(turnIndex + 1) % roomUser.Count].ID;
         }
 
+        private void AnnouceStageOver()
+        {
+            /*
+             * [0] 응답코드 스테이지오버
+             * [1] 사람 수 - 4
+             * [2] 아이디
+             * [3] 보유 카드 수 반복
+             */
+            List<byte> stageOver = new();
+            stageOver.Add((byte)ReqRoomType.StageOver);
+            stageOver.Add((byte)roomUser.Count); //4명
+            //사람이 나가서 AI로 해도 roomuser는 4명으로?
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                stageOver.Add((byte)roomUser[i].ID);
+                stageOver.Add((byte)roomUser[i].HaveCard);
+            }
+            byte[] announceData = stageOver.ToArray();
+            SendMessege(announceData);
+        }
+
         private void AnnounceTurnPlayer()
         {
             ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
             byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
+            SendMessege(turnData);
+        }
+
+        private void SendMessege(byte[] _messege)
+        {
             for (int i = 0; i < roomUser.Count; i++)
             {
-                roomUser[i].workingSocket.Send(turnData);
+                roomUser[i].workingSocket.Send(_messege);
             }
         }
 
@@ -352,6 +413,8 @@ namespace testTcp
             linkRoomCount.Close();
             linkRoomCount.Dispose();
         }
+        #endregion
+
         #endregion
     }
 

@@ -94,31 +94,6 @@ public class PlayClient
     }
     #endregion
 
-    private void HandleReceiveData(ReqRoomType _reqType, byte[] _validData)
-    {
-        if (_reqType == ReqRoomType.Chat)
-        {
-            ResChat(_validData);
-        }
-        else if (_reqType == ReqRoomType.Start)
-        {
-            ResGameStart(_validData);
-        }
-        else if (_reqType == ReqRoomType.PutDownCard)
-        {
-            ResPutDownCard(_validData);
-        }
-        else if (_reqType == ReqRoomType.ArrangeTurn)
-        {
-            ResTurnPlayer(_validData);
-        }
-        else if (_reqType == ReqRoomType.PartyData)
-        {
-            //idRegister에 반환되는 타입.
-            ResRegisterClientIDToPartyID(_validData);
-        }
-    }
-
     #region 로직 파트
     bool isChatOpen = false;
     private void SetNewGame()
@@ -439,6 +414,34 @@ public class PlayClient
     }
     #endregion
 
+    private void HandleReceiveData(ReqRoomType _reqType, byte[] _validData)
+    {
+        if (_reqType == ReqRoomType.Chat)
+        {
+            ResChat(_validData);
+        }
+        else if (_reqType == ReqRoomType.Start)
+        {
+            ResGameStart(_validData);
+        }
+        else if (_reqType == ReqRoomType.PutDownCard)
+        {
+            ResPutDownCard(_validData);
+        }
+        else if (_reqType == ReqRoomType.ArrangeTurn)
+        {
+            ResTurnPlayer(_validData);
+        }
+        else if (_reqType == ReqRoomType.PartyData)
+        {
+            //idRegister에 반환되는 타입.
+            ResRegisterClientIDToPartyID(_validData);
+        }
+        else if(_reqType == ReqRoomType.StageOver)
+        {
+            ResStageOver(_validData);
+        }
+    }
 
     #region 통신 파트
     #region 게임 시작
@@ -605,6 +608,27 @@ public class PlayClient
         CountTurn(); //턴을 지정하는건 새로운 턴이 된거
     }
     #endregion
+
+    private void ResStageOver(byte[] _data)
+    {
+        /*
+            * [0] 응답코드 스테이지오버
+            * [1] 사람 수 - 4
+            * [2] 아이디
+            * [3] 보유 카드 수 반복
+            */
+        int resRestCard = 0;
+        for (int i = 2; i < _data.Length; i+=2)
+        {
+            if (_data[i] == id)
+            {
+                //내가 남았다고 전달 받은 카드 수
+                resRestCard = _data[i + 1];
+                break;
+            }
+        }
+        Console.WriteLine($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
+    }
 
     #region 채팅 
     private void ReqChat(string msg)
