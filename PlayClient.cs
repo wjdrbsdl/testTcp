@@ -307,6 +307,11 @@ public class PlayClient
         //처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
         if (CheckAllPass())
         {
+            if (selecetCardList.Count == 0)
+            {
+                Console.WriteLine("올 패스 받은 상태에서 내가 패스는 불가");
+                return false;
+            }
             return true;
         }
 
@@ -359,11 +364,7 @@ public class PlayClient
             {
                 //하나라도 내가 냈던거랑 같으면 내가 냈던거
                 Console.WriteLine("올 패스 받았음");
-                if(selecetCardList.Count == 0)
-                {
-                    Console.WriteLine("올 패스 받은 상태에서 내가 패스는 불가");
-                    return false;
-                }
+       
                 return true;
             }
             return false;
