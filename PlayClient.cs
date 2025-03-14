@@ -65,11 +65,11 @@ public class PlayClient
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
             ReqRegisterClientID();
         }
-        
+
         catch
         {
             Console.WriteLine("방 접속 실패 재 접속시도");
-           Connect();
+            Connect();
         }
     }
 
@@ -77,14 +77,14 @@ public class PlayClient
     {
         try
         {
-           // Console.WriteLine("클라 리십 콜백");
+            // Console.WriteLine("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
             int received = clientSocket.EndReceive(_result);
             byte[] validData = new byte[received];
             Array.Copy(receiveBuff, validData, received);
             ReqRoomType reqType = (ReqRoomType)receiveBuff[0];
             HandleReceiveData(reqType, validData);
-            
+
             clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
         }
         catch
@@ -149,8 +149,8 @@ public class PlayClient
 
             if (isGameStart == true)
             {
-                TestMixture();
-                //GiveCardCommand();
+                //TestMixture();
+                GiveCardCommand();
                 break;
             }
 
@@ -179,7 +179,7 @@ public class PlayClient
         {
             string card = Console.ReadLine();
             selecetCardList = new();
-         
+
             card = card.Replace(" ", "");//공백제거
             string[] selectCards = card.Split(","); //콤마로 구별
             int validCount = 0;
@@ -187,11 +187,11 @@ public class PlayClient
             {
                 char cardClass = selectCards[i][0];
                 CardClass selectClass = CardClass.Spade;
-                if(cardClass == 'd')
+                if (cardClass == 'd')
                 {
                     selectClass = CardClass.Dia;
                 }
-                else if(cardClass == 'h')
+                else if (cardClass == 'h')
                 {
                     selectClass = CardClass.Heart;
                 }
@@ -218,9 +218,9 @@ public class PlayClient
                     {
                         putDownList.Add(selecetCardList[i]);
                     }
-                
+
                 }
-             
+
             }
         }
     }
@@ -237,13 +237,20 @@ public class PlayClient
                 Console.WriteLine("자기 차례가 아닙니다.");
                 continue;
             }
-            card = card.Replace(" ","");//공백제거
+            card = card.Replace(" ", "");//공백제거
             string[] selectCards = card.Split(","); //콤마로 구별
             int validCount = 0;
             for (int i = 0; i < selectCards.Length; i++)
             {
-                if (Int32.TryParse(selectCards[i], out int selectCard) && 0 <= selectCard && selectCard < haveCardList.Count)
+                if (Int32.TryParse(selectCards[i], out int selectCard) && (selectCard == 22 || 0 <= selectCard && selectCard < haveCardList.Count))
                 {
+                    if (selectCard == 22)
+                    {
+                        Console.WriteLine("패스");
+                        validCount++;
+                        break; ;
+                    }
+
                     Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
                     selecetCardList.Add(haveCardList[selectCard]);
                     validCount++;
@@ -255,8 +262,8 @@ public class PlayClient
                 }
 
             }
-          
-            if(validCount != selectCards.Length)
+
+            if (validCount != selectCards.Length)
             {
                 //잘못 입력된게 있어서 패스
                 continue;
@@ -266,7 +273,7 @@ public class PlayClient
                 //낼수 있는 카드조합이면 제출
                 ReqPutDownCard(selecetCardList);
             }
-            
+
         }
     }
 
@@ -274,79 +281,73 @@ public class PlayClient
     {
         CardRule cardRule = new CardRule();
         TMixture selectCardValue = new TMixture();
-        if(cardRule.IsVarid(selecetCardList, out selectCardValue) == false)
+        if (cardRule.IsVarid(selecetCardList, out selectCardValue) == false)
         {
+            Console.WriteLine("유효한 조합이 아닙니다.");
             return false;
         }
 
         //혼자 크기 비교 위해서 아래비교, 내가 제출한건 무조건 전걸로 진행 
-        /*
-        ////선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
-        //if(gameTurn == 1)
-        //{
-        //    //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
-        //    foreach(CardData card in selecetCardList)
-        //    {
-        //        if(card.Compare(CardData.minClass, CardData.minNum) == 0)
-        //        {
-        //            return true;
-        //        }
-        //    }
-        //    Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
-        //    return false;
-        //}
-        ////처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
-        //if (CheckAllPass())
-        //{
-        //    return true;
-        //}
-        */
+
+        //선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
+        if (gameTurn == 1)
+        {
+            //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
+            foreach (CardData card in selecetCardList)
+            {
+                if (card.Compare(CardData.minClass, CardData.minNum) == 0)
+                {
+                    return true;
+                }
+            }
+            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minNum}을 포함해야함");
+            return false;
+        }
+
+        //처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
+        if (CheckAllPass())
+        {
+            return true;
+        }
 
 
+        if (selectCardValue.mixture == EMixtureType.Pass)
+        {
+            //패스한거면 그냥 통과
+            return true;
+        }
+
+        //이전것과 비교
         TMixture putDownValue = new TMixture();
         cardRule.CheckValidRule(putDownList, out putDownValue);
 
         Console.WriteLine($"이전꺼 {putDownValue.mixture}:{putDownValue.mainCardClass}:{putDownValue.mainRealValue}" +
             $"\n제출용 {selectCardValue.mixture}:{selectCardValue.mainCardClass}:{selectCardValue.mainRealValue}:");
         //비교 안되는 타입이면 (앞에 낸것과 다른 유형이면) 실패
-        if(cardRule.TryCompare(putDownValue, selectCardValue, out int compareValue) == false)
+        if (cardRule.TryCompare(putDownValue, selectCardValue, out int compareValue) == false)
         {
-            Console.WriteLine("비교 불가");
+            Console.WriteLine("이전과 다른 타입이라 잘못된 제출");
             return false;
         }
         //compareValue는 이전꺼에서 현재껄 뺀거 - 즉 양수면 전께 큰거 
-        if(compareValue > 0)
+        if (compareValue > 0)
         {
             //이전것보다 작아도 실패
             Console.WriteLine("전 보다 작다");
             return false;
         }
-        Console.WriteLine("전 보다 크다");
 
+        Console.WriteLine("전 보다 크다");
         return true;
     }
 
     private bool CheckAllPass()
     {
-        if(putDownList.Count == 0)
+        if (putDownList.Count == 0)
         {
             return false;
         }
-        Console.WriteLine("올 패스인지 체크");
-        selecetCardList.Sort();
-        putDownList.Sort();
-
-        //정렬해서 냈던 카드가 있으면 올 패스 된거.
-        for (int i = 0; i < selecetCardList.Count; i++)
-        {
-            if (selecetCardList[0].CompareTo(putDownList[0]) == 0)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        return false;
+     
         Console.WriteLine("올 패스인지 체크");
         giveCardList.Sort();
         putDownList.Sort();
@@ -354,15 +355,22 @@ public class PlayClient
         //정렬해서 냈던 카드가 있으면 올 패스 된거.
         for (int i = 0; i < giveCardList.Count; i++)
         {
-            if(giveCardList[0].CompareTo(putDownList[0]) == 0)
+            if (giveCardList[0].CompareTo(putDownList[0]) == 0)
             {
+                //하나라도 내가 냈던거랑 같으면 내가 냈던거
+                Console.WriteLine("올 패스 받았음");
+                if(selecetCardList.Count == 0)
+                {
+                    Console.WriteLine("올 패스 받은 상태에서 내가 패스는 불가");
+                    return false;
+                }
                 return true;
             }
             return false;
         }
 
         return false;
-   
+
     }
 
     private void ResetPutDownCard()
@@ -401,7 +409,7 @@ public class PlayClient
          * [2] 번부터 2개씩 카드가 생성
          */
         haveCardList = new();
-        for (int i = 2; i < _resDate.Length; i+=2)
+        for (int i = 2; i < _resDate.Length; i += 2)
         {
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
             CardData card = new CardData((CardClass)_resDate[i], _resDate[i + 1]);
@@ -413,7 +421,7 @@ public class PlayClient
 
     private void ConsoleMyCardList()
     {
-        for (int i = 0; i < haveCardList.Count; i ++)
+        for (int i = 0; i < haveCardList.Count; i++)
         {
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
             Console.WriteLine($"보유 카드 {haveCardList[i].cardClass} : {haveCardList[i].num}");
@@ -441,9 +449,9 @@ public class PlayClient
 
         for (int i = 3; i < _data.Length; i += _data[2])
         {
-            for (int infoIndex = i; infoIndex < i+_data[2]; infoIndex++)
+            for (int infoIndex = i; infoIndex < i + _data[2]; infoIndex++)
             {
-                Console.WriteLine(_data[infoIndex]+"번 참가");
+                Console.WriteLine(_data[infoIndex] + "번 참가");
             }
         }
     }
@@ -458,7 +466,7 @@ public class PlayClient
         LobbyClient client = new LobbyClient();
         client.ReConnect();
     }
-    
+
     public void ResRoomOut()
     {
 
@@ -497,19 +505,28 @@ public class PlayClient
         * [2] 낸 카드 숫자
         * [3] 카드 구성
         */
+        //본인의 행위였다면
+        if (_data[1] == id)
+        {
+            //이전에 냈던건 초기화
+            giveCardList.Clear(); 
+        }
         if (_data[2] == 0)
         {
-            //낸 카드가 없으면 안함.
+            //방금 낸 카드가 없으면
+            //이전 카드 덮어 쓰지 않고
+            //본인의 카드 제거나 이전 카드 기록 안함
+            Console.WriteLine("전 사람 패쓰했음");
             return;
         }
         ResetPutDownCard(); //이전 카드 클리어
-        Console.WriteLine(_data[1]+" 유저가 제출한 카드");
-        for (int i = 3; i < _data.Length; i+=2)
+        Console.WriteLine(_data[1] + " 유저가 제출한 카드");
+        for (int i = 3; i < _data.Length; i += 2)
         {
             CardClass cardClass = (CardClass)_data[i];
             int num = _data[i + 1];
             AddPutDownCard(cardClass, num);
-            
+
             //만약 내가냈던 카드면
             if (_data[1] == id)
             {
@@ -519,6 +536,7 @@ public class PlayClient
                     {
                         //내가 보유한 카드에서 제거
                         haveCardList.RemoveAt(myCardIndex);
+                        giveCardList.Add(new CardData(cardClass, num));
                         break;
                     }
                 }
@@ -529,7 +547,7 @@ public class PlayClient
         {
             ConsoleMyCardList();
         }
-      
+
     }
     #endregion
 
@@ -544,6 +562,7 @@ public class PlayClient
         if (isMyTurn)
         {
             Console.WriteLine("내 차례");
+            CheckAllPass();
         }
         CountTurn(); //턴을 지정하는건 새로운 턴이 된거
     }
@@ -562,7 +581,7 @@ public class PlayClient
 
     private void ResChat(byte[] _receiveData)
     {
-        string convertStr = Encoding.Unicode.GetString(_receiveData, 1, _receiveData.Length-1);
+        string convertStr = Encoding.Unicode.GetString(_receiveData, 1, _receiveData.Length - 1);
         char first = convertStr[0];
 
         int max = Math.Min(convertStr.Length - 1, convertStr.Length);
@@ -577,7 +596,7 @@ public class PlayClient
             split = "[" + number.ToString() + "]:" + split;
         }
         Console.WriteLine(split);
-        
+
     }
     #endregion
     #endregion

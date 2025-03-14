@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 public enum EMixtureType
 {
-    None, OnePair, TwoPair, Triple, Straight, Flush, FullHouse, FourCard, StraightFlush, RoyalStriaghtFlush
+    None, Pass, OnePair, TwoPair, Triple, Straight, Flush, FullHouse, FourCard, StraightFlush, RoyalStriaghtFlush
 }
 
 public class CardRule
@@ -22,6 +22,12 @@ public class CardRule
     {
         int cardCount = _list.Count;
         TMixture mixtureValue = new TMixture();
+        if(cardCount == 0)
+        {
+            mixtureValue.mixture = EMixtureType.Pass;
+            _mixtureValue = mixtureValue;
+            return EMixtureType.Pass;
+        }
         if (cardCount == 1)
         {
             mixtureValue.mixture = EMixtureType.OnePair;
