@@ -150,7 +150,7 @@ public class PlayClient
             if (isGameStart == true)
             {
                 //TestMixture();
-                GiveCardCommand();
+                SelectPutCards();
                 break;
             }
 
@@ -225,56 +225,72 @@ public class PlayClient
         }
     }
 
-    private void GiveCardCommand()
+    private void SelectPutCards()
     {
         Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
         while (true)
         {
-            string card = Console.ReadLine();
+            //제출할 카드 입력
+            string cardStr = Console.ReadLine();
             selecetCardList = new();
             if (isMyTurn == false)
             {
                 Console.WriteLine("자기 차례가 아닙니다.");
                 continue;
             }
-            card = card.Replace(" ", "");//공백제거
-            string[] selectCards = card.Split(","); //콤마로 구별
-            int validCount = 0;
-            for (int i = 0; i < selectCards.Length; i++)
+
+            //입력 유효 체크
+            if (CheckValidInput(cardStr) == false)
             {
-                if (Int32.TryParse(selectCards[i], out int selectCard) && (selectCard == 22 || 0 <= selectCard && selectCard < haveCardList.Count))
-                {
-                    if (selectCard == 22)
-                    {
-                        Console.WriteLine("패스");
-                        validCount++;
-                        break; ;
-                    }
 
-                    Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
-                    selecetCardList.Add(haveCardList[selectCard]);
-                    validCount++;
-                }
-                else
-                {
-                    Console.WriteLine("유효 숫자가 아닙니다.");
-                    break;
-                }
-
-            }
-
-            if (validCount != selectCards.Length)
-            {
-                //잘못 입력된게 있어서 패스
                 continue;
             }
+
+            //낼 수 있는 카드 인지 체크
             if (CheckSelectCard())
             {
-                //낼수 있는 카드조합이면 제출
+                //낼 수 있으면 제출
                 ReqPutDownCard(selecetCardList);
             }
 
         }
+    }
+
+    private bool CheckValidInput(string cardStr)
+    {
+        //잘 골랐는지 체크
+        cardStr = cardStr.Replace(" ", "");//공백제거
+        string[] selectCards = cardStr.Split(","); //콤마로 구별
+        int validCount = 0;
+        for (int i = 0; i < selectCards.Length; i++)
+        {
+            if (Int32.TryParse(selectCards[i], out int selectCard) && (selectCard == 22 || 0 <= selectCard && selectCard < haveCardList.Count))
+            {
+                if (selectCard == 22)
+                {
+                    Console.WriteLine("패스");
+                    validCount++;
+                    break; ;
+                }
+
+                Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
+                selecetCardList.Add(haveCardList[selectCard]);
+                validCount++;
+            }
+            else
+            {
+                Console.WriteLine("유효 숫자가 아닙니다.");
+                break;
+            }
+
+        }
+
+        if (validCount != selectCards.Length)
+        {
+            //잘못 입력된게 있으면 실패
+            return false;
+        }
+        return true;
     }
 
     private bool CheckSelectCard()
@@ -352,7 +368,7 @@ public class PlayClient
         {
             return false;
         }
-     
+
         Console.WriteLine("올 패스인지 체크");
         giveCardList.Sort();
         putDownList.Sort();
@@ -364,7 +380,7 @@ public class PlayClient
             {
                 //하나라도 내가 냈던거랑 같으면 내가 냈던거
                 Console.WriteLine("올 패스 받았음");
-       
+
                 return true;
             }
             return false;
@@ -372,6 +388,21 @@ public class PlayClient
 
         return false;
 
+    }
+
+    #region 카드 리스트 관리
+    private void ResetGiveCard()
+    {
+        //내가 냈던 카드 초기화
+        giveCardList.Clear();
+    }
+
+    private void RecordGiveCard(List<CardData> _cardList)
+    {
+        for (int i = 0; i < _cardList.Count; i++)
+        {
+            giveCardList.Add(_cardList[i]);
+        }
     }
 
     private void ResetPutDownCard()
@@ -383,6 +414,24 @@ public class PlayClient
     {
         putDownList.Add(_card);
     }
+
+    private void RemoveHaveCard(List<CardData> _removeList)
+    {
+        //보유 카드에서 내려놓은 카드 제거
+        for (int i = 0; i < _removeList.Count; i++)
+        {
+            CardData target = _removeList[i];
+            for (int j = 0; j < haveCardList.Count; j++)
+            {
+                if (haveCardList[j].CompareTo(target) == 0)
+                {
+                    haveCardList.RemoveAt(j);
+                    break;
+                }
+            }
+        }
+    }
+    #endregion
 
     private void CountTurn()
     {
@@ -508,7 +557,7 @@ public class PlayClient
         if (_data[1] == id)
         {
             //이전에 냈던건 초기화
-            giveCardList.Clear(); 
+            ResetGiveCard();
         }
         if (_data[2] == 0)
         {
@@ -518,7 +567,8 @@ public class PlayClient
             Console.WriteLine("전 사람 패쓰했음");
             return;
         }
-        ResetPutDownCard(); //이전 카드 클리어
+        //바닥에 깔린 카드 갱신
+        ResetPutDownCard();
         Console.WriteLine(_data[1] + " 유저가 제출한 카드");
         for (int i = 3; i < _data.Length; i += 2)
         {
@@ -526,25 +576,13 @@ public class PlayClient
             int num = _data[i + 1];
             CardData card = new CardData(cardClass, num); //카드 생성
             AddPutDownCard(card);
-
-            //만약 내가냈던 카드면
-            if (_data[1] == id)
-            {
-                for (int myCardIndex = 0; myCardIndex < haveCardList.Count; myCardIndex++)
-                {
-                    if (haveCardList[myCardIndex].CompareTo(card) == 0)
-                    {
-                        //내가 보유한 카드에서 제거
-                        haveCardList.RemoveAt(myCardIndex);
-                        giveCardList.Add(new CardData(cardClass, num));
-                        break;
-                    }
-                }
-            }
-
         }
+
+        //본인이 낸거라면 본인 카드에서 제외
         if (_data[1] == id)
         {
+            RemoveHaveCard(putDownList);
+            RecordGiveCard(putDownList);
             ConsoleMyCardList();
         }
 
