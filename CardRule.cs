@@ -155,7 +155,7 @@ public class CardRule
         if (isFlush)
         {
             //가장 큰 숫자의 무늬와 실제벨류
-            tmixtureValue.mixture = EMixtureType.Straight;
+            tmixtureValue.mixture = EMixtureType.Flush;
             tmixtureValue.mainCardClass = _list[4].cardClass;
             tmixtureValue.mainRealValue = _list[4].realValue;
             _mixtureValue = tmixtureValue;
