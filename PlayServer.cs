@@ -12,7 +12,9 @@ namespace testTcp
     public enum ReqRoomType
     {
         Ready, Start, RoomOut, Chat, ClientID,
-        ShuffleCard, HandOutCard
+        ShuffleCard, PutDownCard,
+        ArrangeTurn
+
     }
 
     public class PlayServer
@@ -23,8 +25,9 @@ namespace testTcp
         public Socket linkRoomCount; //서버로비와 소통하는 소켓 -> 방 인원 바뀔때 신호 
         public int number = 0;
         public string roomName;
+        public int turnId;
         //방장이 호스트가 되어 해당 방에있던 유저들의 입력을 받고 처리 
-
+        #region 연결 및 소켓 세팅
         public void Start()
         {
             ColorConsole.ConsoleColor("룸 서버 시작");
@@ -78,12 +81,12 @@ namespace testTcp
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
                 byte[] recevieBuff = cla.buffer;
                 int received = cla.workingSocket.EndReceive(ar);
-                byte[] buffer = new byte[received];
-                Array.Copy(cla.buffer, 0, buffer, 0, received);
+                byte[] validData = new byte[received];
+                Array.Copy(cla.buffer, 0, validData, 0, received);
                 //SendChat(cla.buffer, cla.ID);
                 ////Send(obj.Buffer);
                 //HandleRoomMaker(obj, buffer);
-                HandleReq(cla, cla.buffer);
+                HandleReq(cla, validData);
 
 
                 //obj.ClearBuffer();
@@ -96,6 +99,7 @@ namespace testTcp
             }
 
         }
+        #endregion
 
         private void HandleReq(ClaInfo _claInfo, byte[] _reqData)
         {
@@ -118,7 +122,13 @@ namespace testTcp
             else if(reqType == ReqRoomType.Start)
             {
                 //방장으로 부터 게임 시작을 호출 받으면 
-                GameStart();
+                GameStartShuffleCard(); //카드 나눠주고
+                AnnounceTurnPlayer(); //누가시작인지 알려줌
+            }
+            else if(reqType == ReqRoomType.PutDownCard)
+            {
+                AnnoucePutDownCard(_reqData); //카드제출 요청 받으면, 다른유저들에게 어떤 카드가 나왔는지 알려줌
+                AnnounceTurnPlayer(); //다음 차례 지정해줌 - 위의 풋다운에서 다음 차례 찾아놓음
             }
         }
 
@@ -157,7 +167,7 @@ namespace testTcp
          
         }
 
-        public void GameStart()
+        public void GameStartShuffleCard()
         {
             //카드를 섞어서 각 플레이어에게 나눠주고, 순서를 지정해준다. 
             ColorConsole.ConsoleColor("게임 카드 나눠주기");
@@ -193,11 +203,51 @@ namespace testTcp
                     giveCardIndex++;
                     cardList.Add((byte)selectCard.cardClass);
                     cardList.Add((byte)selectCard.num);
+                    if (selectCard.Compare(CardClass.Spade, 3) == 0)
+                    {
+                        turnId = roomUser[userIndex].ID; //서버에서 누가 시작인지 알고 있을것. 
+                    }
                 }
                 byte[] cardByte = cardList.ToArray();
                 roomUser[userIndex].workingSocket.Send(cardByte);
             }
 
+        }
+
+        public void AnnoucePutDownCard(byte[] _putDownCardData)
+        {
+            /*
+              * [0] 요청 코드 putdownCard
+              * [1] 플레이어 id
+              * [2] 낸 카드 숫자
+              * [3] 카드 구성
+            */
+            ColorConsole.ConsoleColor("어떤 카드 냈는지 표기");
+            //전체 데이터에서 해당 유저가 가진 카드를 빼도 되고
+            //주 역할은 다음 차례 역할 지정하기 
+            int turnIndex = 0;
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID == _putDownCardData[1])
+                {
+                    turnIndex = i;
+                }
+              
+                //낸 유저를 포함 모든 유저들에게 해당 유저가 어떤걸 냈는지 전달.
+                roomUser[i].workingSocket.Send(_putDownCardData);
+            }
+            //현재 차례였던애 turnIndex;
+            turnId = roomUser[(turnIndex + 1) % roomUser.Count].ID;
+        }
+
+        public void AnnounceTurnPlayer()
+        {
+            ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
+            byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].workingSocket.Send(turnData);
+            }
         }
 
         #region 룸 상태 변경 전달

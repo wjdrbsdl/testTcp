@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 public enum CardClass
 {
-    Space, Dia, Heart, Clover
+    Spade, Dia, Heart, Clover
 }
 
 public class CardData : Comparer<CardData>
 {
-    public CardClass cardClass = CardClass.Space;
+    public CardClass cardClass = CardClass.Spade;
     public int num;
 
 
