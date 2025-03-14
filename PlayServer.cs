@@ -11,7 +11,8 @@ namespace testTcp
 {
     public enum ReqRoomType
     {
-        Ready, Start, RoomOut, Chat, ClientID,
+        Ready, Start, RoomOut, Chat, 
+        IDRegister, PartyData,
         ShuffleCard, PutDownCard,
         ArrangeTurn
 
@@ -43,7 +44,7 @@ namespace testTcp
         {
             public byte[] buffer;
             public Socket workingSocket;
-            public int ID;
+            public int ID = 0; //0이면 아이디를 전달받지 못한 상태
             public ClaInfo(int _bufferSize, Socket _claSocket)
             {
                 buffer = new byte[_bufferSize];
@@ -105,10 +106,10 @@ namespace testTcp
         {
             ReqRoomType reqType = (ReqRoomType)_reqData[0];
             
-            if(reqType == ReqRoomType.ClientID)
+            if(reqType == ReqRoomType.IDRegister)
             {
                 _claInfo.ID = _reqData[1];
-             //  Console.WriteLine("플레이클라이언트 아이디 입력 " + _claInfo.ID);
+                AnnouceParty();
             }
             else if (reqType == ReqRoomType.Chat)
             {
@@ -132,7 +133,7 @@ namespace testTcp
             }
         }
 
-        public void SendChat(byte[] msg, int _receiveNumbering)
+        private void SendChat(byte[] msg, int _receiveNumbering)
         {
             for (int i = 0; i < roomUser.Count; i++)
             {
@@ -153,7 +154,7 @@ namespace testTcp
             }
         }
 
-        public void ExitClient(byte[] _receiveData)
+        private void ExitClient(byte[] _receiveData)
         {
             ColorConsole.ConsoleColor($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
             for (int i = 0; i < roomUser.Count; i++)
@@ -167,7 +168,7 @@ namespace testTcp
          
         }
 
-        public void GameStartShuffleCard()
+        private void GameStartShuffleCard()
         {
             //카드를 섞어서 각 플레이어에게 나눠주고, 순서를 지정해준다. 
             ColorConsole.ConsoleColor("게임 카드 나눠주기");
@@ -214,7 +215,38 @@ namespace testTcp
 
         }
 
-        public void AnnoucePutDownCard(byte[] _putDownCardData)
+        private void AnnouceParty()
+        {
+            ColorConsole.ConsoleColor("유저 방 참가를 알려줌");
+            /*
+             * [0] 응답코드 PartyIDes,
+             * [1] ID를 받은 유효한 파티원 수
+             * [2] 각 파티원 정보 길이
+             * [3] 0번 파티원부터 정보 입력
+             */
+            List<byte> partyData = new();
+            int partyInfoLength = 1; //일단 id값만 넘기기 때문에 임시로 1개
+            partyData.Add((byte)ReqRoomType.PartyData);
+            partyData.Add((byte)roomUser.Count); //일단 모든 파티원 수 담아놓음
+            partyData.Add((byte)partyInfoLength);
+            byte valid = 0;
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID != 0)
+                {
+                    valid += 1;
+                    partyData.Add((byte)roomUser[i].ID);
+                }
+            }
+            partyData[1] = valid; //아이디가 밝혀진 애들로 수 조절해서 전달
+            byte[] partyDataByte = partyData.ToArray();
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].workingSocket.Send(partyDataByte);
+            }
+        }
+
+        private void AnnoucePutDownCard(byte[] _putDownCardData)
         {
             /*
               * [0] 요청 코드 putdownCard
@@ -240,7 +272,7 @@ namespace testTcp
             turnId = roomUser[(turnIndex + 1) % roomUser.Count].ID;
         }
 
-        public void AnnounceTurnPlayer()
+        private void AnnounceTurnPlayer()
         {
             ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
             byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
