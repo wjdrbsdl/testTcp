@@ -15,7 +15,6 @@ public class CardRule
     public bool IsVarid(List<CardData> _list, out TMixture _mixtureValue)
     {
         EMixtureType mixture = CheckValidRule(_list, out _mixtureValue);
-        Console.WriteLine($"{_mixtureValue.mixture} : {_mixtureValue.mainCardClass} : {_mixtureValue.mainRealValue}");
         return mixture != EMixtureType.None;
     }
 
