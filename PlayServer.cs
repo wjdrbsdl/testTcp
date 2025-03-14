@@ -67,7 +67,7 @@ namespace testTcp
                 SendRoomCount(); //변경한 인원 전달
                 linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
             }
-            catch (Exception e)
+            catch 
             {
                 Console.WriteLine("");
             }
@@ -94,7 +94,7 @@ namespace testTcp
                 cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
            
             }
-            catch (Exception e)
+            catch 
             {
 
             }

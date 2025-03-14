@@ -40,7 +40,7 @@ namespace testTcp
 
                 mainSocket.BeginAccept(AcceptCallBack, null); //서버 소켓은 다시 연결수락용으로 진행
             }
-            catch(Exception e)
+            catch
             {
 
             }

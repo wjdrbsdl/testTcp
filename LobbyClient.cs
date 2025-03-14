@@ -162,7 +162,7 @@ public class LobbyClient
         clientSocket.Dispose();
 
         Console.WriteLine("플레이어 참가 클라이언트 생성");
-        PlayClient playerClient = new PlayClient(ip, 5001, id);
+        PlayClient playerClient = new PlayClient(ip, portNum, id);
         playerClient.Connect();
 
         meetState = MeetState.Room;

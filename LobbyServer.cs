@@ -44,7 +44,7 @@ public class LobbyServer
             mainSock.BeginAccept(AcceptCallback, null);
             UpdateRemoveSockect();
         }
-        catch (Exception e)
+        catch 
         {
             Console.WriteLine("연결 실패");
         }
@@ -84,7 +84,7 @@ public class LobbyServer
 
             mainSock.BeginAccept(AcceptCallback, index);
         }
-        catch (Exception e)
+        catch 
         {
             Console.WriteLine("받아들이기 실패");
         }
@@ -107,7 +107,7 @@ public class LobbyServer
             obj.ClearBuffer();
             obj.WorkingSocket.BeginReceive(obj.Buffer, 0, obj.BufferSize, 0, DataReceived, obj);
         }
-        catch (Exception e)
+        catch 
         {
 
             AsyncObject obj = (AsyncObject)ar.AsyncState;
@@ -155,7 +155,6 @@ public class LobbyServer
         ColorConsole.ConsoleColor("신청한 방이름 : " + roomName);
       
         IPAddress roomServerIP = ((IPEndPoint)_obj.WorkingSocket.RemoteEndPoint).Address;
-        int roomPerson = 0;
         /*
          * 방 만들기 리스폰스- 응답타입, 방참가 여부, 생성-참가 되었다면 참가자 수, 참가자 정보
          */

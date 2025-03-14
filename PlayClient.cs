@@ -61,7 +61,7 @@ public class PlayClient
             ReqRegisterClientID();
         }
         
-        catch(Exception e)
+        catch
         {
             Console.WriteLine("방 접속 실패 재 접속시도");
            Connect();
@@ -82,7 +82,7 @@ public class PlayClient
             
             clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
         }
-        catch(Exception e)
+        catch
         {
             Console.WriteLine("클라 리십 실패");
         }
