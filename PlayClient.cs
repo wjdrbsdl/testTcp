@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using testTcp;
 
-
 public class PlayerData
 {
     public int ID;
@@ -150,6 +149,7 @@ public class PlayClient
 
             if (isGameStart == true)
             {
+                //TestMixture();
                 GiveCardCommand();
                 break;
             }
@@ -170,6 +170,54 @@ public class PlayClient
             ReqChat(chatMeseege);
         }
 
+    }
+
+    private void TestMixture()
+    {
+        Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
+        while (true)
+        {
+            string card = Console.ReadLine();
+            selecetCardList = new();
+            if (isMyTurn == false)
+            {
+                Console.WriteLine("자기 차례가 아닙니다.");
+                continue;
+            }
+            card = card.Replace(" ", "");//공백제거
+            string[] selectCards = card.Split(","); //콤마로 구별
+            int validCount = 0;
+            for (int i = 0; i < selectCards.Length; i++)
+            {
+                char cardClass = selectCards[i][0];
+                CardClass selectClass = CardClass.Spade;
+                if(cardClass == 'd')
+                {
+                    selectClass = CardClass.Dia;
+                }
+                else if(cardClass == 'h')
+                {
+                    selectClass = CardClass.Heart;
+                }
+                else if (cardClass == 'c')
+                {
+                    selectClass = CardClass.Clover;
+                }
+                string cardNum = selectCards[i].Substring(1);
+                if (int.TryParse(cardNum, out int parseCardNum) && 0 <= parseCardNum && parseCardNum <= 13)
+                {
+                    CardData newCard = new CardData(selectClass, parseCardNum);
+                    selecetCardList.Add(newCard);
+                }
+            }
+
+            CardRule cardRule = new CardRule();
+            TMixture mixtureValue = new TMixture();
+            if (cardRule.IsVarid(selecetCardList, out mixtureValue) == false)
+            {
+               
+            }
+        }
     }
 
     private void GiveCardCommand()
@@ -219,6 +267,13 @@ public class PlayClient
 
     private bool CheckSelectCard()
     {
+        CardRule cardRule = new CardRule();
+        TMixture mixtureValue = new TMixture();
+        if(cardRule.IsVarid(selecetCardList, out mixtureValue) == false)
+        {
+            return false;
+        }
+
         //선택된 카드를 현재 낼 수 있는지 판단해서 bool 반환
         if(gameTurn == 1)
         {
