@@ -68,7 +68,7 @@ namespace testTcp
         {
             try
             {
-                ColorConsole.ConsoleColor("룸     서버로서 리시브");
+               // ColorConsole.ConsoleColor("룸     서버로서 리시브");
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
                 byte[] recevieBuff = cla.buffer;
                 int received = cla.workingSocket.EndReceive(ar);

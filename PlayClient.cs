@@ -60,7 +60,7 @@ public class PlayClient
     {
         try
         {
-            Console.WriteLine("클라 리십 콜백");
+           // Console.WriteLine("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
             int received = clientSocket.EndReceive(_result);
             ReqRoomType reqType = (ReqRoomType)receiveBuff[0];

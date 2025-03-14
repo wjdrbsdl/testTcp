@@ -122,7 +122,7 @@ public class LobbyClient
         if (_receiveData[1] == LobbyServer.failCode)
         {
             //현재 인원수 쪽에 패일 코드를 넣어서 불가 체크
-            Console.WriteLine("r방에 참가 못했음");
+            Console.WriteLine("방에 참가 못했음");
             return;
         }
 
