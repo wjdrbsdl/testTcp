@@ -161,7 +161,7 @@ public class PlayClient
 
         for (int i = 3; i < _data.Length; i += _data[2])
         {
-            for (int infoIndex = i; infoIndex < _data[2]; infoIndex++)
+            for (int infoIndex = i; infoIndex < i+_data[2]; infoIndex++)
             {
                 Console.WriteLine(_data[infoIndex]+"번 참가");
             }
