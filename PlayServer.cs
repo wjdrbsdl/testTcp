@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace testTcp
 {
+    public enum ReqRoomType
+    {
+        Ready, Start, RoomOut, Chat, ClientID,
+        ShuffleCard, HandOutCard
+    }
+
     public class PlayServer
     {
         public List<ClaInfo> roomUser = new();
@@ -109,6 +115,11 @@ namespace testTcp
                 ExitClient(_reqData);
                 SendRoomCount();
             }
+            else if(reqType == ReqRoomType.Start)
+            {
+                //방장으로 부터 게임 시작을 호출 받으면 
+                GameStart();
+            }
         }
 
         public void SendChat(byte[] msg, int _receiveNumbering)
@@ -144,6 +155,49 @@ namespace testTcp
             }
             Console.WriteLine(roomUser.Count);
          
+        }
+
+        public void GameStart()
+        {
+            //카드를 섞어서 각 플레이어에게 나눠주고, 순서를 지정해준다. 
+            ColorConsole.ConsoleColor("게임 카드 나눠주기");
+            CardData[] cards = new CardData[52];
+            int index = 0;
+            for (int cardClass = 0; cardClass < 4; cardClass++)
+            {
+                for (int cardNum = 1; cardNum <= 13; cardNum++)
+                {
+                    CardData card = new CardData((CardClass)cardClass, cardNum);
+                    cards[index] = card;
+                    index++;
+                }
+            }
+            //섞었다 치고
+
+            //4 명의 유저에게
+            int giveCardIndex = 0;
+            for(int userIndex = 0; userIndex < roomUser.Count; userIndex++)
+            {
+                // (byte)카드클래스, (byte)num 순으로 해당 리스트에 추가
+                List<byte> cardList = new();
+                cardList.Add((byte)ReqRoomType.Start);//요청 코드
+                cardList.Add((byte)13);//줄 숫자
+                /*
+                 * [0] 요청코드 게임스타트
+                 * [1] 카드 숫자
+                 */
+                //13장씩
+                for (int cardCount = 1; cardCount <= 13; cardCount++)
+                {
+                    CardData selectCard = cards[giveCardIndex];
+                    giveCardIndex++;
+                    cardList.Add((byte)selectCard.cardClass);
+                    cardList.Add((byte)selectCard.num);
+                }
+                byte[] cardByte = cardList.ToArray();
+                roomUser[userIndex].workingSocket.Send(cardByte);
+            }
+
         }
 
         #region 룸 상태 변경 전달

@@ -7,10 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using testTcp;
 
-public enum ReqRoomType
-{
-    Ready, Start, RoomOut, Chat, ClientID
-}
+
 
 public class PlayClient
 {
@@ -20,12 +17,17 @@ public class PlayClient
     public int id;
     public MeetState meetState = MeetState.Lobby;
     public string state = "";
+    public List<CardData> haveCardList;
+    public List<CardData> giveCardList;
+    public bool isMyTurn = false;
 
     public PlayClient(byte[] _ip, int _port, int _id = 0)
     {
         ip = _ip;
         id = _id;
         port = _port;
+        haveCardList = new();
+        giveCardList = new();
     }
 
     public void Connect()
@@ -63,10 +65,16 @@ public class PlayClient
            // Console.WriteLine("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
             int received = clientSocket.EndReceive(_result);
+            byte[] varidBuff = new byte[received];
+            Array.Copy(receiveBuff, varidBuff, received);
             ReqRoomType reqType = (ReqRoomType)receiveBuff[0];
             if(reqType == ReqRoomType.Chat)
             {
-                ResChat(receiveBuff);
+                ResChat(varidBuff);
+            }
+            else if(reqType == ReqRoomType.Start)
+            {
+                ResGameStart(varidBuff);
             }
             
             clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
@@ -77,12 +85,47 @@ public class PlayClient
         }
     }
 
+    #region 게임 시작
+    private void ReqGameStart()
+    {
+        byte[] reqStart = { (byte)ReqRoomType.Start };
+        clientSocket.Send(reqStart);
+    }
+
+    private void ResGameStart(byte[] _resDate)
+    {
+        /*
+         * 셔플된 카드데이터
+         * [0] 응답코드
+         * [1] 카드 장수
+         * [2] 번부터 2개씩 카드가 생성
+         */
+        isMyTurn = false;
+        for (int i = 2; i < _resDate.Length; i+=2)
+        {
+            //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
+            CardData card = new CardData((CardClass)_resDate[i], _resDate[i + 1]);
+            haveCardList.Add(card);
+            if(card.Compare(CardClass.Clover, 3) == 0)
+            {
+                Console.WriteLine("클로버3 보유 내 차례");
+                isMyTurn = true;
+            }
+            Console.WriteLine($"받은 카드 {card.cardClass} : {card.num}");
+        }
+    }
+
+    #endregion
+
+    #region 룸 아이디 요청
     public void ReqClientNumber()
     {
         byte[] reqID = new byte[] { (byte)ReqRoomType.ClientID, (byte)id };
         clientSocket.Send(reqID);
     }
+    #endregion
 
+    #region 방나가기
     public void ReqRoomOut()
     {
         Console.WriteLine("클라가 나가기 요청");
@@ -96,6 +139,7 @@ public class PlayClient
     {
 
     }
+    #endregion
 
 
     bool isChatOpen = false;
@@ -117,6 +161,11 @@ public class PlayClient
             {
                 ReqRoomOut();
                 return;
+            }
+            else if(messege == "s")
+            {
+                ReqGameStart();
+                continue;
             }
 
             string chatMeseege = " " + messege;
