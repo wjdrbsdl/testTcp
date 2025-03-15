@@ -135,34 +135,37 @@ public class PlayClient
 
         isChatOpen = true;
         Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
-        while (true)
+        Task.Run(() =>
         {
-            // Console.WriteLine("플클 와일문");
-            string messege = Console.ReadLine();
-
-            if (isGameStart == true)
+            while (true)
             {
-                //TestMixture();
-                SelectPutCards();
-                break;
+                // Console.WriteLine("플클 와일문");
+                string messege = Console.ReadLine();
+
+                if (isGameStart == true)
+                {
+                    //TestMixture();
+                    SelectPutCards();
+                    break;
+                }
+
+                if (messege == "q")
+                {
+                    ReqRoomOut();
+                    return;
+                }
+                else if (messege == "s")
+                {
+                    ReqGameStart();
+                    continue;
+                }
+
+                string chatMeseege = " " + messege;
+
+                ReqChat(chatMeseege);
             }
-
-            if (messege == "q")
-            {
-                ReqRoomOut();
-                return;
-            }
-            else if (messege == "s")
-            {
-                ReqGameStart();
-                continue;
-            }
-
-            string chatMeseege = " " + messege;
-
-            ReqChat(chatMeseege);
-        }
-
+        });
+       
     }
 
     private void TestMixture()
@@ -228,15 +231,15 @@ public class PlayClient
                 //제출할 카드 입력
                 string cardStr = Console.ReadLine();
                 selecetCardList = new();
+                if (isGameStart == false)
+                {
+                    break;
+                }
+
                 if (isMyTurn == false)
                 {
                     Console.WriteLine("자기 차례가 아닙니다.");
                     continue;
-                }
-
-                if(isGameStart == false)
-                {
-                    break;
                 }
 
                 //입력 유효 체크
@@ -449,8 +452,9 @@ public class PlayClient
         }
         else if (_reqType == ReqRoomType.Start)
         {
-            ResGameStart(_validData);
             SetNewGame();
+            ResGameStart(_validData);
+            
         }
         else if (_reqType == ReqRoomType.PutDownCard)
         {
