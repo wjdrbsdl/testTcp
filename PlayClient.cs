@@ -107,6 +107,16 @@ public class PlayClient
         isGameStart = true;
     }
 
+    private void ResetStage()
+    {
+        Console.WriteLine("스테이지 리셋");
+        giveCardList = new();
+        selecetCardList = new();
+        putDownList = new();
+        gameTurn = 0;
+        isMyTurn = false;
+    }
+
     private void EnterMessege()
     {
         //채팅 기능 한번만 오픈되도록
@@ -203,32 +213,55 @@ public class PlayClient
     private void SelectPutCards()
     {
         Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
-        while (true)
+        Task.Run(() =>
         {
-            //제출할 카드 입력
-            string cardStr = Console.ReadLine();
-            selecetCardList = new();
-            if (isMyTurn == false)
+            while (true)
             {
-                Console.WriteLine("자기 차례가 아닙니다.");
-                continue;
-            }
+                //제출할 카드 입력
+                string cardStr = Console.ReadLine();
+                selecetCardList = new();
+                if (isMyTurn == false)
+                {
+                    Console.WriteLine("자기 차례가 아닙니다.");
+                    continue;
+                }
 
-            //입력 유효 체크
-            if (CheckValidInput(cardStr) == false)
+                //입력 유효 체크
+                if (CheckValidInput(cardStr) == false)
+                {
+
+                    continue;
+                }
+
+                //낼 수 있는 카드 인지 체크
+                if (CheckSelectCard())
+                {
+                    //낼 수 있으면 제출
+                    ReqPutDownCard(selecetCardList);
+                }
+
+            }
+        });
+
+        Task.Run(() =>
+        {
+            int k = 0;
+            while (k < 10000)
             {
-
-                continue;
+                Console.WriteLine("k 올라 간다" +k);
+                k++;
             }
+        });
 
-            //낼 수 있는 카드 인지 체크
-            if (CheckSelectCard())
+        Task.Run(() =>
+        {
+            int j = 0;
+            while (j < 10000)
             {
-                //낼 수 있으면 제출
-                ReqPutDownCard(selecetCardList);
+                Console.WriteLine("j 올라 간다" + j);
+                j++;
             }
-
-        }
+        });
     }
 
     private bool CheckValidInput(string cardStr)
@@ -628,6 +661,7 @@ public class PlayClient
             }
         }
         Console.WriteLine($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
+        ResetStage();
     }
 
     #region 채팅 
