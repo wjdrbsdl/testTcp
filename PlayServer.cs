@@ -192,7 +192,7 @@ namespace testTcp
             }
         }
 
-        int overBadPoint = 15; //
+        int overBadPoint = 13; //
         private bool CheckGameOver()
         {
             //게임 오버 체크 한유저라도 벌점 

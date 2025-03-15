@@ -60,7 +60,7 @@ public class PlayClient
         //연결 되었으면 자료 받을 준비, 상태 준비
         try
         {
-            Console.WriteLine("게임 클라 연결 콜백");
+           ColorConsole.Default("게임 클라 연결 콜백");
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
             ReqRegisterClientID();
@@ -68,7 +68,7 @@ public class PlayClient
 
         catch
         {
-            Console.WriteLine("방 접속 실패 재 접속시도");
+            ColorConsole.Default("방 접속 실패 재 접속시도");
             Connect();
         }
     }
@@ -89,7 +89,7 @@ public class PlayClient
         }
         catch
         {
-            Console.WriteLine("클라 리십 실패");
+            ColorConsole.Default("클라 리십 실패");
         }
     }
     #endregion
@@ -109,7 +109,7 @@ public class PlayClient
 
     private void ResetStage()
     {
-        Console.WriteLine("스테이지 리셋");
+        ColorConsole.Default("스테이지 리셋");
         giveCardList = new();
         selecetCardList = new();
         putDownList = new();
@@ -134,7 +134,7 @@ public class PlayClient
         }
 
         isChatOpen = true;
-        Console.WriteLine("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
+        ColorConsole.Default("플레이어 클라이언트 메시지를 입력하세요. 나가기 q");
         Task.Run(() =>
         {
             while (true)
@@ -170,7 +170,7 @@ public class PlayClient
 
     private void TestMixture()
     {
-        Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
+        ColorConsole.Default("제출할 카드를 골라 주세요 1,2,3,4");
         while (true)
         {
             string card = Console.ReadLine();
@@ -223,7 +223,7 @@ public class PlayClient
 
     private void SelectPutCards()
     {
-        Console.WriteLine("제출할 카드를 골라 주세요 1,2,3,4");
+        ColorConsole.Default("제출할 카드를 골라 주세요 1,2,3,4");
         Task.Run(() =>
         {
             while (true)
@@ -238,7 +238,7 @@ public class PlayClient
 
                 if (isMyTurn == false)
                 {
-                    Console.WriteLine("자기 차례가 아닙니다.");
+                    ColorConsole.Default("자기 차례가 아닙니다.");
                     continue;
                 }
 
@@ -273,18 +273,18 @@ public class PlayClient
             {
                 if (selectCard == 22)
                 {
-                    Console.WriteLine("패스");
+                    ColorConsole.Default("패스");
                     validCount++;
                     break; ;
                 }
 
-                Console.WriteLine($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
+                ColorConsole.Default($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
                 selecetCardList.Add(haveCardList[selectCard]);
                 validCount++;
             }
             else
             {
-                Console.WriteLine("유효 숫자가 아닙니다.");
+                ColorConsole.Default("유효 숫자가 아닙니다.");
                 break;
             }
 
@@ -304,7 +304,7 @@ public class PlayClient
         TMixture selectCardValue = new TMixture();
         if (cardRule.IsVarid(selecetCardList, out selectCardValue) == false)
         {
-            Console.WriteLine("유효한 조합이 아닙니다.");
+            ColorConsole.Default("유효한 조합이 아닙니다.");
             return false;
         }
 
@@ -321,7 +321,7 @@ public class PlayClient
                     return true;
                 }
             }
-            Console.WriteLine($"첫 시작은 {CardData.minClass}{CardData.minRealValue}을 포함해야함");
+            ColorConsole.Default($"첫 시작은 {CardData.minClass}{CardData.minRealValue}을 포함해야함");
             return false;
         }
 
@@ -330,7 +330,7 @@ public class PlayClient
         {
             if (selecetCardList.Count == 0)
             {
-                Console.WriteLine("올 패스 받은 상태에서 내가 패스는 불가");
+                ColorConsole.Default("올 패스 받은 상태에서 내가 패스는 불가");
                 return false;
             }
             return true;
@@ -347,23 +347,23 @@ public class PlayClient
         TMixture putDownValue = new TMixture();
         cardRule.CheckValidRule(putDownList, out putDownValue);
 
-        Console.WriteLine($"이전꺼 {putDownValue.mixture}:{putDownValue.mainCardClass}:{putDownValue.mainRealValue}" +
+        ColorConsole.Default($"이전꺼 {putDownValue.mixture}:{putDownValue.mainCardClass}:{putDownValue.mainRealValue}" +
             $"\n제출용 {selectCardValue.mixture}:{selectCardValue.mainCardClass}:{selectCardValue.mainRealValue}:");
         //비교 안되는 타입이면 (앞에 낸것과 다른 유형이면) 실패
         if (cardRule.TryCompare(putDownValue, selectCardValue, out int compareValue) == false)
         {
-            Console.WriteLine("이전과 다른 타입이라 잘못된 제출");
+            ColorConsole.Default("이전과 다른 타입이라 잘못된 제출");
             return false;
         }
         //compareValue는 이전꺼에서 현재껄 뺀거 - 즉 양수면 전께 큰거 
         if (compareValue > 0)
         {
             //이전것보다 작아도 실패
-            Console.WriteLine("전 보다 작다");
+            ColorConsole.Default("전 보다 작다");
             return false;
         }
 
-        Console.WriteLine("전 보다 크다");
+        ColorConsole.Default("전 보다 크다");
         return true;
     }
 
@@ -374,7 +374,7 @@ public class PlayClient
             return false;
         }
 
-        Console.WriteLine("올 패스인지 체크");
+        ColorConsole.Default("올 패스인지 체크");
         giveCardList.Sort();
         putDownList.Sort();
 
@@ -384,7 +384,7 @@ public class PlayClient
             if (giveCardList[0].CompareTo(putDownList[0]) == 0)
             {
                 //하나라도 내가 냈던거랑 같으면 내가 냈던거
-                Console.WriteLine("올 패스 받았음");
+                ColorConsole.Default("올 패스 받았음");
 
                 return true;
             }
@@ -515,7 +515,7 @@ public class PlayClient
         for (int i = 0; i < haveCardList.Count; i++)
         {
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
-            Console.WriteLine($"보유 카드 {haveCardList[i].cardClass} : {haveCardList[i].num}");
+            ColorConsole.Default($"보유 카드 {haveCardList[i].cardClass} : {haveCardList[i].num}");
         }
     }
 
@@ -542,7 +542,7 @@ public class PlayClient
         {
             for (int infoIndex = i; infoIndex < i + _data[2]; infoIndex++)
             {
-                Console.WriteLine(_data[infoIndex] + "번 참가");
+                ColorConsole.Default(_data[infoIndex] + "번 참가");
             }
         }
     }
@@ -551,7 +551,7 @@ public class PlayClient
     #region 방나가기
     public void ReqRoomOut()
     {
-        Console.WriteLine("클라가 나가기 요청");
+        ColorConsole.Default("클라가 나가기 요청");
         byte[] reqRoomOut = new byte[] { (byte)ReqRoomType.RoomOut, (byte)id };
         clientSocket.Send(reqRoomOut);
         LobbyClient client = new LobbyClient();
@@ -573,7 +573,7 @@ public class PlayClient
          * [2] 낸 카드 숫자
          * [3] 카드 구성
          */
-        Console.WriteLine("카드 제출 요청");
+        ColorConsole.Default("카드 제출 요청");
         List<byte> reqCardList = new();
         reqCardList.Add((byte)ReqRoomType.PutDownCard);
         reqCardList.Add((byte)id);
@@ -607,12 +607,12 @@ public class PlayClient
             //방금 낸 카드가 없으면
             //이전 카드 덮어 쓰지 않고
             //본인의 카드 제거나 이전 카드 기록 안함
-            Console.WriteLine("전 사람 패쓰했음");
+            ColorConsole.Default("전 사람 패쓰했음");
             return;
         }
         //바닥에 깔린 카드 갱신
         ResetPutDownCard();
-        Console.WriteLine(_data[1] + " 유저가 제출한 카드");
+        ColorConsole.Default(_data[1] + " 유저가 제출한 카드");
         for (int i = 3; i < _data.Length; i += 2)
         {
             CardClass cardClass = (CardClass)_data[i];
@@ -642,7 +642,7 @@ public class PlayClient
         isMyTurn = id == _data[1];
         if (isMyTurn)
         {
-            Console.WriteLine("내 차례");
+            ColorConsole.Default("내 차례");
             CheckAllPass();
         }
         CountTurn(); //턴을 지정하는건 새로운 턴이 된거
@@ -667,7 +667,7 @@ public class PlayClient
                 break;
             }
         }
-        Console.WriteLine($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
+        ColorConsole.Default($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
         ResetStage();
     }
 
@@ -693,7 +693,7 @@ public class PlayClient
         */
         for (int i = 3; i < _data.Length; i += _data[2])
         {
-            Console.WriteLine($"{_data[i]}의 벌점 :{_data[i + 1]}");
+            ColorConsole.Default($"{_data[i]}의 벌점 :{_data[i + 1]}");
         }
     }
 
@@ -724,7 +724,7 @@ public class PlayClient
             int number = _receiveData[0];
             split = "[" + number.ToString() + "]:" + split;
         }
-        Console.WriteLine(split);
+        ColorConsole.Default(split);
 
     }
     #endregion
