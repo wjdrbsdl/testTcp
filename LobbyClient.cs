@@ -20,7 +20,7 @@ public class LobbyClient
 
     ~LobbyClient()
     {
-        Console.WriteLine( "로비 클라 소멸");
+        ColorConsole.Default( "로비 클라 소멸");
     }
 
     public LobbyClient(string _ip, int _id, string _preRoomName = "")
@@ -55,7 +55,7 @@ public class LobbyClient
     {
         try
         {
-            Console.WriteLine("클라 연결 콜백" );
+            ColorConsole.Default("클라 연결 콜백" );
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
             //접속했으면 접속한 넘버링 요구
@@ -63,7 +63,7 @@ public class LobbyClient
         }
         catch
         {
-            Console.WriteLine("방에서 재 연결 시도");
+            ColorConsole.Default("방에서 재 연결 시도");
             Connect();
         }
     }
@@ -72,7 +72,7 @@ public class LobbyClient
     {
         try
         {
-            Console.WriteLine("클라 리십 콜백");
+            ColorConsole.Default("클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
 
             ReqLobbyType reqType = (ReqLobbyType)receiveBuff[0];
@@ -97,7 +97,7 @@ public class LobbyClient
     #region 방 생성 진입
     private void ReqRoomJoin(string _roomName = "테스트 방 이름")
     {
-        Console.WriteLine("참가 신청");
+        ColorConsole.Default("참가 신청");
         string roomName = _roomName;
         byte[] roomByte = Encoding.Unicode.GetBytes(roomName);
         byte[] reqRoom = new byte[roomByte.Length + 1];
@@ -108,7 +108,7 @@ public class LobbyClient
 
     private void ResRoomJoin(byte[] _receiveData)
     {
-        Console.WriteLine("방에 대한 정보를 받음. 방 인원 : " + _receiveData[1]);
+        ColorConsole.Default("방에 대한 정보를 받음. 방 인원 : " + _receiveData[1]);
         //룸메이크 요청에 대한 대답이라면
         /*
               * [0] 응답 코드
@@ -122,7 +122,7 @@ public class LobbyClient
         if (_receiveData[1] == LobbyServer.failCode)
         {
             //현재 인원수 쪽에 패일 코드를 넣어서 불가 체크
-            Console.WriteLine("방에 참가 못했음");
+            ColorConsole.Default("방에 참가 못했음");
             return;
         }
 
@@ -134,7 +134,7 @@ public class LobbyClient
         for (int i = 0; i < ipLength; i++)
         {
             ip[i] = _receiveData[i + ipIdx];
-            Console.WriteLine(ip[i].ToString());
+            ColorConsole.Default(ip[i].ToString());
         }
         //아이피 주소 생성
         IPAddress address = new IPAddress(ip);
@@ -144,24 +144,24 @@ public class LobbyClient
         int roomNameLength = _receiveData[3];
         string roomName = Encoding.Unicode.GetString(_receiveData, ipIdx + ipLength, _receiveData[3]);
 
-        Console.WriteLine(roomName + "방에서 내 순서 :" + _receiveData[1].ToString());
+        ColorConsole.Default(roomName + "방에서 내 순서 :" + _receiveData[1].ToString());
 
         isLobby = false; //게임으로 이동
         int roomPersonCount = _receiveData[1];
         if (roomPersonCount == 0)
         {
             //현재 방 인원이 0 이라면 방장으로서 호스트도 생성
-            Console.WriteLine("방장으로서 호스트 진행");
+            ColorConsole.Default("방장으로서 호스트 진행");
             PlayServer roomServer = new PlayServer();
             roomServer.roomName = roomName;
             roomServer.Start();
         }
-        Console.WriteLine("로비 클라 디스컨넥");
+        ColorConsole.Default("로비 클라 디스컨넥");
         ReqDisConnect();
         clientSocket.Close();//기존 소켓은 끊고 해당 클래스는 지움 
         clientSocket.Dispose();
 
-        Console.WriteLine("플레이어 참가 클라이언트 생성");
+        ColorConsole.Default("플레이어 참가 클라이언트 생성");
         PlayClient playerClient = new PlayClient(ip, portNum, id);
         playerClient.Connect();
 
@@ -171,7 +171,7 @@ public class LobbyClient
 
     private void ReqDisConnect()
     {
-        Console.WriteLine("종료 요청");
+        ColorConsole.Default("종료 요청");
         byte[] reqClaDisconnect = new byte[] { (byte)ReqLobbyType.Close };
         clientSocket.Send(reqClaDisconnect);
     }
@@ -190,7 +190,7 @@ public class LobbyClient
          */
 
         id = receiveBuff[1];
-        Console.WriteLine("클라 넘버 " + id);
+        ColorConsole.Default("클라 넘버 " + id);
     }
 
     bool isLobby = true;
