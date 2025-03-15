@@ -48,6 +48,8 @@ namespace testTcp
             public Socket workingSocket;
             public int ID = 0; //0이면 아이디를 전달받지 못한 상태
             public int HaveCard = 0;
+            public int BadPoint = 0; 
+
             public ClaInfo(int _bufferSize, Socket _claSocket)
             {
                 buffer = new byte[_bufferSize];
@@ -131,19 +133,61 @@ namespace testTcp
             }
             else if(reqType == ReqRoomType.PutDownCard)
             {
-                AnnoucePutDownCard(_reqData); //카드제출 요청 받으면, 다른유저들에게 어떤 카드가 나왔는지 알려줌
-                if(CheckStageOver(_reqData))
+                //1. 다른유저들에게도 제출된 카드 공지
+                AnnoucePutDownCard(_reqData); 
+                //2. 해당 유저가 모든 패를 털었는지 체크
+                if(CheckStageOver(_reqData) == false)
                 {
-                    AnnouceStageOver();
-                    ReadyNexStage();
+                    //해당 판이 안끝났으면 계속 진행
+                    AnnounceTurnPlayer(); //다음 차례 지정해줌 - 위의 풋다운에서 다음 차례 찾아놓음
                     return;
                 }
-                AnnounceTurnPlayer(); //다음 차례 지정해줌 - 위의 풋다운에서 다음 차례 찾아놓음
+                //3. 판이 끝났다면 벌점 계산
+                CalBadPoint();
+                bool gameOver = CheckGameOver(); //벌점에 따라 게임이 끝났는지 체크
+                //4. 게임오버인지 체크
+                if(gameOver == false)
+                {
+                    //아직 게임 오버가 아니라면
+                    AnnouceStageOver(); //스테이지 끝났다고 알리고
+                    ReadyNexStage(); //다음 스테이지 준비
+                    return;
+                }
+                //5. 점수 정산 게임 대기 상태로 전환
+
+                
             }
             else if(reqType == ReqRoomType.StageReady)
             {
                 ResStageReadyPlayer(_reqData);
             }
+        }
+
+        private void CalBadPoint()
+        {
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                int restCard = roomUser[i].HaveCard;
+                if(restCard >= 1)
+                {
+                    roomUser[i].BadPoint += roomUser[i].HaveCard; //남은 장수 만큼 벌점 진행
+                }
+                
+            }
+        }
+
+        int overBadPoint = 15; //
+        private bool CheckGameOver()
+        {
+            //게임 오버 체크 한유저라도 벌점 
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].BadPoint >= overBadPoint)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool CheckStageOver(byte[] _putDownCardData)
