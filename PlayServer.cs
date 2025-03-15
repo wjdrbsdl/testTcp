@@ -315,6 +315,7 @@ namespace testTcp
              * [2] 아이디
              * [3] 보유 카드 수 반복
              */
+            ColorConsole.ConsoleColor("해당 판 종료 공지");
             List<byte> stageOver = new();
             stageOver.Add((byte)ReqRoomType.StageOver);
             stageOver.Add((byte)roomUser.Count); //4명
