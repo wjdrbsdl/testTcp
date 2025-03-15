@@ -135,7 +135,7 @@ namespace testTcp
             {
                 //방장으로 부터 게임 시작을 호출 받으면 
                 UserScoreReset(); //유저 점수 리셋
-                GameStartShuffleCard(); //카드 나눠주고
+                AnnouceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
             }
             else if(reqType == ReqRoomType.PutDownCard)
@@ -237,6 +237,12 @@ namespace testTcp
         Queue<int> reqStagePlayer = new();
         List<int> confirmStagePlayer = new();
         int curUserCount;
+
+        private void ShuffleCard()
+        {
+
+        }
+
         private void ReadyNexStage()
         {
             //스테이지가 끝나면 큐를 청소하고,
@@ -259,12 +265,13 @@ namespace testTcp
                     }
                 }
                 ColorConsole.ConsoleColor(curUserCount +"명의 준비 확인 다음 스테이지 시작");
-                GameStartShuffleCard();
+                AnnouceCardArrange();
                 AnnounceTurnPlayer();
             });
 
 
         }
+
         private void ResStageReadyPlayer(byte[] _reqStageReady)
         {
             //유저가 다음판 할 준비 되었다고 알리기 
@@ -342,7 +349,7 @@ namespace testTcp
          
         }
 
-        private void GameStartShuffleCard()
+        private void AnnouceCardArrange()
         {
             //카드를 섞어서 각 플레이어에게 나눠주고, 순서를 지정해준다. 
             ColorConsole.ConsoleColor("게임 카드 나눠주기");
