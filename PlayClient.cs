@@ -117,6 +117,14 @@ public class PlayClient
         isMyTurn = false;
     }
 
+    private void SetGameOver()
+    {
+        isGameStart = false;
+        //채팅으로 온
+        isChatOpen = false;
+        EnterMessege();
+    }
+
     private void EnterMessege()
     {
         //채팅 기능 한번만 오픈되도록
@@ -224,6 +232,11 @@ public class PlayClient
                 {
                     Console.WriteLine("자기 차례가 아닙니다.");
                     continue;
+                }
+
+                if(isGameStart == false)
+                {
+                    break;
                 }
 
                 //입력 유효 체크
@@ -437,6 +450,7 @@ public class PlayClient
         else if (_reqType == ReqRoomType.Start)
         {
             ResGameStart(_validData);
+            SetNewGame();
         }
         else if (_reqType == ReqRoomType.PutDownCard)
         {
@@ -451,10 +465,16 @@ public class PlayClient
             //idRegister에 반환되는 타입.
             ResRegisterClientIDToPartyID(_validData);
         }
-        else if(_reqType == ReqRoomType.StageOver)
+        else if (_reqType == ReqRoomType.StageOver)
         {
             ResStageOver(_validData);
             ReqStageReady();
+
+        }
+        else if (_reqType == ReqRoomType.GameOver)
+        {
+            ResGameOver(_validData);
+            SetGameOver();
 
         }
     }
@@ -482,7 +502,7 @@ public class PlayClient
             CardData card = new CardData((CardClass)_resDate[i], _resDate[i + 1]);
             haveCardList.Add(card);
         }
-        SetNewGame();
+      
         ConsoleMyCardList();
     }
 
@@ -634,7 +654,7 @@ public class PlayClient
             * [3] 보유 카드 수 반복
             */
         int resRestCard = 0;
-        for (int i = 2; i < _data.Length; i+=2)
+        for (int i = 2; i < _data.Length; i += 2)
         {
             if (_data[i] == id)
             {
@@ -646,7 +666,7 @@ public class PlayClient
         Console.WriteLine($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
         ResetStage();
     }
-    
+
     private void ReqStageReady()
     {
         //유저가 다음판 할 준비 되었다고 알리기 
@@ -655,7 +675,22 @@ public class PlayClient
          * [1] 내 아이디
          */
         byte[] stageReadyDate = new byte[] { (byte)ReqRoomType.StageReady, (byte)id };
-        clientSocket.Send(stageReadyDate);    
+        clientSocket.Send(stageReadyDate);
+    }
+
+    private void ResGameOver(byte[] _data)
+    {
+        /*
+        * [0] 종료코드 GameOver
+        * [1] 유저수 - 순위대로 정렬
+        * [2] 보낼 정보 데이터 길이 일단 2
+        * [3] 유저 ID
+        * [4] 유저 벌점
+        */
+        for (int i = 3; i < _data.Length; i += _data[2])
+        {
+            Console.WriteLine($"{_data[i]}의 벌점 :{_data[i + 1]}");
+        }
     }
 
     #region 채팅 
