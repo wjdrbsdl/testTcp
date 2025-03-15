@@ -56,6 +56,12 @@ namespace testTcp
                 workingSocket = _claSocket;
                
             }
+
+            public void ResetScore()
+            {
+                HaveCard = 0;
+                BadPoint = 0;
+            }
           
         }
 
@@ -128,6 +134,7 @@ namespace testTcp
             else if(reqType == ReqRoomType.Start)
             {
                 //방장으로 부터 게임 시작을 호출 받으면 
+                UserScoreReset(); //유저 점수 리셋
                 GameStartShuffleCard(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
             }
@@ -154,8 +161,8 @@ namespace testTcp
                     return;
                 }
                 //5. 점수 정산 게임 대기 상태로 전환
-
-                
+                AnnouceGameOver();
+                ReadyGameStart();
             }
             else if(reqType == ReqRoomType.StageReady)
             {
@@ -163,6 +170,15 @@ namespace testTcp
             }
         }
 
+        private void UserScoreReset()
+        {
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].ResetScore();
+            }
+        }
+
+        #region 벌점, 스테이지, 게임 종료 체크
         private void CalBadPoint()
         {
             for (int i = 0; i < roomUser.Count; i++)
@@ -215,7 +231,9 @@ namespace testTcp
             }
             return false;
         }
+        #endregion
 
+        #region 게임 진행
         Queue<int> reqStagePlayer = new();
         List<int> confirmStagePlayer = new();
         int curUserCount;
@@ -258,6 +276,36 @@ namespace testTcp
             //ReadyNextStage에서 계속해서 확인할거임.
             reqStagePlayer.Enqueue(_reqStageReady[1]);
         }
+
+        private void ReadyGameStart()
+        {
+            //게임 시작 위해 레뒤 같은거 대기하기?
+        }
+        #endregion
+
+        private void AnnouceGameOver()
+        {
+            //게임 오버시 전달할것들
+            roomUser.Sort((a, b) => a.BadPoint.CompareTo(b.BadPoint)); //벌점 오름순으로 정렬
+            /*
+             * [0] 종료코드 GameOver
+             * [1] 유저수 - 순위대로 정렬
+             * [2] 보낼 정보 데이터 길이 일단 2
+             * [3] 유저 ID
+             * [4] 유저 벌점
+             */
+            List<byte> overDate = new();
+            overDate.Add((byte)ReqRoomType.GameOver);
+            overDate.Add((byte)roomUser.Count);
+            overDate.Add(2); //보낼 데이터 길이
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                overDate.Add((byte)roomUser[i].ID);
+                overDate.Add((byte)roomUser[i].BadPoint);
+            }
+            SendMessege(overDate.ToArray());
+        }
+
         #region 통신
         private void SendChat(byte[] msg, int _receiveNumbering)
         {
