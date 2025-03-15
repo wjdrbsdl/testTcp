@@ -15,7 +15,7 @@ namespace testTcp
         IDRegister, PartyData,
         ShuffleCard, PutDownCard,
         ArrangeTurn,
-        StageOver, GameOver
+        StageReady, StageOver, GameOver
 
 
     }
@@ -135,9 +135,14 @@ namespace testTcp
                 if(CheckStageOver(_reqData))
                 {
                     AnnouceStageOver();
+                    ReadyNexStage();
                     return;
                 }
                 AnnounceTurnPlayer(); //다음 차례 지정해줌 - 위의 풋다운에서 다음 차례 찾아놓음
+            }
+            else if(reqType == ReqRoomType.StageReady)
+            {
+                ResStageReadyPlayer(_reqData);
             }
         }
 
@@ -167,6 +172,48 @@ namespace testTcp
             return false;
         }
 
+        Queue<int> reqStagePlayer = new();
+        List<int> confirmStagePlayer = new();
+        int curUserCount;
+        private void ReadyNexStage()
+        {
+            //스테이지가 끝나면 큐를 청소하고,
+            //매 프레임마다 큐를 확인해서 준비가 된 id를 확인 
+            //중복 id 없이 정원 4명이 모이면 다음 스테이지 시작
+            reqStagePlayer.Clear();
+            confirmStagePlayer.Clear();
+            curUserCount = roomUser.Count; //룸유저 카운트로 ? 
+            Task.Run(() =>
+            {
+                while (confirmStagePlayer.Count < curUserCount)
+                {
+                    if(reqStagePlayer.TryDequeue(out int id))
+                    {
+                        if(confirmStagePlayer.IndexOf(id) == -1)
+                        {
+                            ColorConsole.ConsoleColor(id + "준비 확인");
+                            confirmStagePlayer.Add(id);
+                        }
+                    }
+                }
+                ColorConsole.ConsoleColor(curUserCount +"명의 준비 확인 다음 스테이지 시작");
+                GameStartShuffleCard();
+                AnnounceTurnPlayer();
+            });
+
+
+        }
+        private void ResStageReadyPlayer(byte[] _reqStageReady)
+        {
+            //유저가 다음판 할 준비 되었다고 알리기 
+            /*
+             * [0] 요구코드 stageReady
+             * [1] 내 아이디
+             */
+            //해당 유저가 준비되었다고 요청이 오면, 모두 준비가 끝났는지 확인할 수 있게 큐에 집어넣음.
+            //ReadyNextStage에서 계속해서 확인할거임.
+            reqStagePlayer.Enqueue(_reqStageReady[1]);
+        }
         #region 통신
         private void SendChat(byte[] msg, int _receiveNumbering)
         {

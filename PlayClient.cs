@@ -243,25 +243,6 @@ public class PlayClient
             }
         });
 
-        Task.Run(() =>
-        {
-            int k = 0;
-            while (k < 10000)
-            {
-                Console.WriteLine("k 올라 간다" +k);
-                k++;
-            }
-        });
-
-        Task.Run(() =>
-        {
-            int j = 0;
-            while (j < 10000)
-            {
-                Console.WriteLine("j 올라 간다" + j);
-                j++;
-            }
-        });
     }
 
     private bool CheckValidInput(string cardStr)
@@ -473,6 +454,8 @@ public class PlayClient
         else if(_reqType == ReqRoomType.StageOver)
         {
             ResStageOver(_validData);
+            ReqStageReady();
+
         }
     }
 
@@ -662,6 +645,17 @@ public class PlayClient
         }
         Console.WriteLine($"실제 남은 수 {haveCardList.Count} 전달 받은 수 {resRestCard}");
         ResetStage();
+    }
+    
+    private void ReqStageReady()
+    {
+        //유저가 다음판 할 준비 되었다고 알리기 
+        /*
+         * [0] 요구코드 stageReady
+         * [1] 내 아이디
+         */
+        byte[] stageReadyDate = new byte[] { (byte)ReqRoomType.StageReady, (byte)id };
+        clientSocket.Send(stageReadyDate);    
     }
 
     #region 채팅 
