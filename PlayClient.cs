@@ -68,7 +68,7 @@ public class PlayClient
 
         catch
         {
-            ColorConsole.Default("방 접속 실패 재 접속시도");
+            ColorConsole.Default("플레이 클라 방 접속 실패 재 접속시도");
             Connect();
         }
     }
@@ -85,11 +85,12 @@ public class PlayClient
             ReqRoomType reqType = (ReqRoomType)receiveBuff[0];
             HandleReceiveData(reqType, validData);
 
-            clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
+            if (clientSocket.Connected)
+                clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
         }
         catch
         {
-            ColorConsole.Default("클라 리십 실패");
+            ColorConsole.Default("플레이 클라 리십 실패");
         }
     }
     #endregion
@@ -554,6 +555,10 @@ public class PlayClient
         ColorConsole.Default("클라가 나가기 요청");
         byte[] reqRoomOut = new byte[] { (byte)ReqRoomType.RoomOut, (byte)id };
         clientSocket.Send(reqRoomOut);
+  
+        clientSocket.Close();
+        clientSocket.Dispose();
+
         LobbyClient client = new LobbyClient();
         client.ReConnect();
     }
