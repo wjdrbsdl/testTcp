@@ -74,7 +74,7 @@ namespace testTcp
                 ClaInfo newCla = new ClaInfo(100, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
-                SendRoomCount(); //변경한 인원 전달
+                SendRoomCount(); //참가에 따른 변경 인원 전달
                 linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
             }
             catch 
@@ -107,7 +107,7 @@ namespace testTcp
             catch 
             {
                 ClaInfo obj = (ClaInfo)ar.AsyncState;
-                AddRemoveSokect(obj.ID);
+                ExitClient((byte)obj.ID);
             }
 
         }
@@ -128,14 +128,12 @@ namespace testTcp
             }
             else if(reqType ==ReqRoomType.RoomOut)
             {
-                ExitClient(_reqData);
-                SendRoomCount();
-
-                if(RoomState == RoomState.Play)
-                {
-                    //플레이중에 누가 나갔으면 게임 오버 
-                    GameOver();
-                }
+                /*roomOut 데이터
+                 * [0] 요구코드 RoomOut
+                 * [1] 나가려는 아이디
+                 */
+                ExitClient(_reqData[1]);
+              
             }
             else if(reqType == ReqRoomType.Start)
             {
@@ -406,11 +404,18 @@ namespace testTcp
             }
         }
 
-        private void ExitClient(byte[] _receiveData)
+        private void ExitClient(byte _exitID)
         {
-            ColorConsole.ConsoleColor($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
-            AddRemoveSokect(_receiveData[1]);
+            ColorConsole.ConsoleColor($"{_exitID}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
+            AddRemoveSokect(_exitID);
+            SendRoomCount(); //유저 나감에 따른 수치 변경
 
+            //나간 아이디가 아직 손님상태인경우 제외
+            if (_exitID!=0 && RoomState == RoomState.Play)
+            {
+                //플레이중에 누가 나갔으면 게임 오버 
+                GameOver();
+            }
         }
 
         private void AnnouceCardArrange()
