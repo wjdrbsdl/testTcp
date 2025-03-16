@@ -55,7 +55,7 @@ public class LobbyClient
     {
         try
         {
-            ColorConsole.Default("클라 연결 콜백" );
+            ColorConsole.Default("로비 클라 연결 콜백" );
             byte[] buff = new byte[100];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
             //접속했으면 접속한 넘버링 요구
@@ -63,7 +63,7 @@ public class LobbyClient
         }
         catch
         {
-            ColorConsole.Default("방에서 재 연결 시도");
+            ColorConsole.Default("로비에서 재 연결 시도");
             Connect();
         }
     }
@@ -72,7 +72,7 @@ public class LobbyClient
     {
         try
         {
-            ColorConsole.Default("클라 리십 콜백");
+            ColorConsole.Default("로비 클라 리십 콜백");
             byte[] receiveBuff = _result.AsyncState as byte[];
 
             ReqLobbyType reqType = (ReqLobbyType)receiveBuff[0];
@@ -97,7 +97,7 @@ public class LobbyClient
     #region 방 생성 진입
     private void ReqRoomJoin(string _roomName = "테스트 방 이름")
     {
-        ColorConsole.Default("참가 신청");
+        ColorConsole.Default("로비에서 방 참가 신청");
         string roomName = _roomName;
         byte[] roomByte = Encoding.Unicode.GetBytes(roomName);
         byte[] reqRoom = new byte[roomByte.Length + 1];
@@ -108,7 +108,7 @@ public class LobbyClient
 
     private void ResRoomJoin(byte[] _receiveData)
     {
-        ColorConsole.Default("방에 대한 정보를 받음. 방 인원 : " + _receiveData[1]);
+        ColorConsole.Default("로비에서 방에 대한 정보를 받음. 방 인원 : " + _receiveData[1]);
         //룸메이크 요청에 대한 대답이라면
         /*
               * [0] 응답 코드
@@ -161,7 +161,7 @@ public class LobbyClient
         clientSocket.Close();//기존 소켓은 끊고 해당 클래스는 지움 
         clientSocket.Dispose();
 
-        ColorConsole.Default("플레이어 참가 클라이언트 생성");
+        ColorConsole.Default("로비에서 플레이어 참가 클라이언트 생성");
         PlayClient playerClient = new PlayClient(ip, portNum, id);
         playerClient.Connect();
 
