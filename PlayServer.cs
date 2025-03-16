@@ -26,9 +26,9 @@ namespace testTcp
         public Socket linkSocket; //룸유저 받아들이는 소켓
         public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
         public Socket linkRoomCount; //서버로비와 소통하는 소켓 -> 방 인원 바뀔때 신호 
-        public int number = 0;
         public string roomName;
         public int turnId;
+        public RoomState roomState = RoomState.Ready;
         //방장이 호스트가 되어 해당 방에있던 유저들의 입력을 받고 처리 
         #region 연결 및 소켓 세팅
         public void Start()
@@ -38,7 +38,7 @@ namespace testTcp
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 5001);
             linkSocket.Bind(endPoint);
             linkSocket.Listen(4);
-
+            UpdateRemoveSockect();
             linkSocket.BeginAccept(AcceptCallBack, null);
         }
 
@@ -72,7 +72,6 @@ namespace testTcp
                 ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
                 ClaInfo newCla = new ClaInfo(100, client);
-                number++;
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
                 SendRoomCount(); //변경한 인원 전달
@@ -107,7 +106,8 @@ namespace testTcp
             }
             catch 
             {
-
+                ClaInfo obj = (ClaInfo)ar.AsyncState;
+                AddRemoveSokect(obj.ID);
             }
 
         }
@@ -290,6 +290,57 @@ namespace testTcp
         }
         #endregion
 
+        #region 유저 퇴장
+        Queue<int> removeQueue = new Queue<int>();
+        private void AddRemoveSokect(int _numbering)
+        {
+            removeQueue.Enqueue(_numbering);
+        }
+
+        private void UpdateRemoveSockect()
+        {
+            Task.Run(() => {
+                while (true)
+                {
+                    int removeCount = removeQueue.Count;
+                    for (int i = 0; i < removeCount; i++)
+                    {
+                        int numbering = removeQueue.Dequeue();
+                        for (int x = 0; x < roomUser.Count; x++)
+                        {
+                            if (numbering == roomUser[x].ID)
+                            {
+
+                                roomUser[x].workingSocket.Close();
+                                roomUser[x].workingSocket.Dispose();
+                                roomUser.RemoveAt(x);
+
+                                Console.WriteLine(numbering + "소켓 제거 유저 남은 수 " + roomUser.Count);
+                                AnnouceParty();
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+           
+        }
+        #endregion
+
+        #region 방상태
+        public RoomState RoomState
+        {
+            get
+            {
+                return roomState;
+            }
+            set
+            {
+                roomState = value;
+            }
+        }
+        #endregion
+
         private void AnnouceGameOver()
         {
             //게임 오버시 전달할것들
@@ -338,15 +389,8 @@ namespace testTcp
         private void ExitClient(byte[] _receiveData)
         {
             ColorConsole.ConsoleColor($"{_receiveData[1]}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
-            for (int i = 0; i < roomUser.Count; i++)
-            {
-                if (roomUser[i].ID == _receiveData[1])
-                {
-                    roomUser.RemoveAt(i);
-                }
-            }
-            Console.WriteLine(roomUser.Count);
-         
+            AddRemoveSokect(_receiveData[1]);
+
         }
 
         private void AnnouceCardArrange()
@@ -502,7 +546,6 @@ namespace testTcp
         {
             try
             {
-               
                 ReqChageRoomState();    
             }
             catch
@@ -513,7 +556,7 @@ namespace testTcp
 
         public void ReqChageRoomState()
         {
-            byte[] reqChangeRoomState = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState.Ready };
+            byte[] reqChangeRoomState = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState };
             linkStateLobby.Send(reqChangeRoomState);
             linkStateLobby.Close();
             linkStateLobby.Dispose();
