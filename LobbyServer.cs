@@ -134,7 +134,7 @@ public class LobbyServer
         }
         else if (reqType == ReqLobbyType.RoomState)
         {
-           ColorConsole.ConsoleColor((RoomState)_reqData[1] + "로 변경 요청 들어옴");
+            ResChangeRoomState(_reqData);
         }
         else if (reqType == ReqLobbyType.RoomUserCount)
         {
@@ -213,6 +213,26 @@ public class LobbyServer
         }
     }
 
+    private void ResChangeRoomState(byte[] _reqData)
+    {
+        //룸상태 변경 
+        /*
+         * [0] 코드 RoomState
+         * [1] 변경될 타입 RoomState.
+         * [2] 방이름 길이
+         * [3] 여서부터 방이름
+         */
+        RoomState roomState = (RoomState)_reqData[1];
+        int roomNameLength = _reqData[2];
+        int roomNameIndex = 3;
+        string roomNameStr = Encoding.Unicode.GetString(_reqData, roomNameIndex, roomNameLength);
+        if (roomList.ContainsKey(roomNameStr))
+        {
+            roomList[roomNameStr].ChangeState(roomState);
+            ColorConsole.ConsoleColor(roomNameStr + " 방 상태 변경 " + roomList[roomNameStr].roomState);
+        }
+    }
+
     public void SendChat(byte[] msg, int _receiveNumbering)
     {
         for (int i = 0; i < connectedClientList.Count; i++)
@@ -269,7 +289,6 @@ public class LobbyServer
 
         //mainSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
     }
-
 
 
     #region 소켓리스트에서 제거

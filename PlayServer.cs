@@ -576,8 +576,18 @@ namespace testTcp
 
         public void ReqChageRoomState()
         {
-            byte[] reqChangeRoomState = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState };
-            linkStateLobby.Send(reqChangeRoomState);
+            //룸상태 변경 
+            /*
+             * [0] 코드 RoomState
+             * [1] 변경될 타입 RoomState.
+             * [2] 방이름 길이
+             * [3] 여서부터 방이름
+             */
+            
+            byte[] name = Encoding.Unicode.GetBytes(roomName);
+            byte[] roomStateCode = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState, (byte)name.Length };
+            byte[] reqStateByte = roomStateCode.Concat(name).ToArray();
+            linkStateLobby.Send(reqStateByte);
             linkStateLobby.Close();
             linkStateLobby.Dispose();
         }
