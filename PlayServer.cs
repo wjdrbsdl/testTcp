@@ -130,10 +130,21 @@ namespace testTcp
             {
                 ExitClient(_reqData);
                 SendRoomCount();
+
+                if(RoomState == RoomState.Play)
+                {
+                    //플레이중에 누가 나갔으면 게임 오버 
+                    GameOver();
+                }
             }
             else if(reqType == ReqRoomType.Start)
             {
-                //방장으로 부터 게임 시작을 호출 받으면 
+                //게임 시작 가능한 상태인지 체크 
+                //방장의 시작인가, 인원이 다 찼는가
+                //게임 시작 가능하면 아래 진행
+
+                RoomState = RoomState.Play;
+                SendRoomStateToLobbyServer();
                 UserScoreReset(); //유저 점수 리셋
                 AnnouceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
@@ -160,9 +171,9 @@ namespace testTcp
                     ReadyNexStage(); //다음 스테이지 준비
                     return;
                 }
-                //5. 점수 정산 게임 대기 상태로 전환
-                AnnouceGameOver();
-                ReadyGameStart();
+                //5. 게임오버 된거면 게임오버 호출
+                GameOver();
+              
             }
             else if(reqType == ReqRoomType.StageReady)
             {
@@ -284,9 +295,18 @@ namespace testTcp
             reqStagePlayer.Enqueue(_reqStageReady[1]);
         }
 
-        private void ReadyGameStart()
+        private void InitGameSetting()
         {
             //게임 시작 위해 레뒤 같은거 대기하기?
+            RoomState = RoomState.Ready;
+            SendRoomStateToLobbyServer();
+        }
+
+        private void GameOver()
+        {
+            ColorConsole.ConsoleColor("게임 오버");
+            AnnouceGameOver();
+            InitGameSetting();
         }
         #endregion
 
@@ -535,7 +555,7 @@ namespace testTcp
         }
 
         #region 룸 상태 변경 전달
-        public void SendRoomState()
+        public void SendRoomStateToLobbyServer()
         {
             IPEndPoint endPoint = new IPEndPoint(LobbyServer.ServerIp, 5000);
             linkStateLobby = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
