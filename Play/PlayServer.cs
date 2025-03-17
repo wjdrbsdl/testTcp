@@ -38,6 +38,7 @@ namespace testTcp
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 5001);
             linkSocket.Bind(endPoint);
             linkSocket.Listen(4);
+            MakeCards(); //
             UpdateRemoveSockect();
             linkSocket.BeginAccept(AcceptCallBack, null);
         }
@@ -246,10 +247,27 @@ namespace testTcp
         Queue<int> reqStagePlayer = new();
         List<int> confirmStagePlayer = new();
         int curUserCount;
+        CardData[] cards;
+        private void MakeCards()
+        {
+            ColorConsole.ConsoleColor("게임 생성");
+            cards = new CardData[52];
+            int index = 0;
+            for (int cardClass = 0; cardClass < 4; cardClass++)
+            {
+                for (int cardNum = 1; cardNum <= 13; cardNum++)
+                {
+                    CardData card = new CardData((CardClass)cardClass, cardNum);
+                    cards[index] = card;
+                    index++;
+                }
+            }
+        }
 
         private void ShuffleCard()
         {
-
+            ShuffleCard shuffle = new ShuffleCard();
+            shuffle.Shuffle(cards);
         }
 
         private void ReadyNexStage()
@@ -421,20 +439,8 @@ namespace testTcp
 
         private void AnnouceCardArrange()
         {
-            //카드를 섞어서 각 플레이어에게 나눠주고, 순서를 지정해준다. 
-            ColorConsole.ConsoleColor("게임 카드 나눠주기");
-            CardData[] cards = new CardData[52];
-            int index = 0;
-            for (int cardClass = 0; cardClass < 4; cardClass++)
-            {
-                for (int cardNum = 1; cardNum <= 13; cardNum++)
-                {
-                    CardData card = new CardData((CardClass)cardClass, cardNum);
-                    cards[index] = card;
-                    index++;
-                }
-            }
-            //섞었다 치고
+            //섞고
+            ShuffleCard();
 
             //4 명의 유저에게
             int giveCardIndex = 0;

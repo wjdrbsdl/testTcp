@@ -4,10 +4,18 @@ using System.Collections.Generic;
 
 public class ShuffleCard
 {
-    public List<CardData> Shuffle(List<CardData> _cardList)
+    public CardData[] Shuffle(CardData[] _cards)
     {
-
-        return _cardList;
+        int mixCount = 50;
+        Random ran = new Random();
+        for (int i = 0; i < _cards.Length; i++)
+        {
+           int ranNum = ran.Next() % _cards.Length;
+            CardData ori = _cards[i];
+            _cards[i] = _cards[ranNum];
+            _cards[ranNum] = ori;
+        }
+        return _cards;
     }
 }
 
