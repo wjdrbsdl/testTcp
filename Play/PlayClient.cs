@@ -125,6 +125,10 @@ public class PlayClient
     InputSelectCard cardSelector;
     private void EnterMessege()
     {
+        if(cardSelector != null)
+        {
+            cardSelector.isPlaying = false; //기존 인풋 종료 
+        }
         //채팅 기능 한번만 오픈되도록
         if (isChatOpen == true)
         {
@@ -143,8 +147,13 @@ public class PlayClient
                 if (isGameStart == true)
                 {
                     //TestMixture();
-                    cardSelector = new InputSelectCard(this, haveCardList);
+                    if(cardSelector == null)
+                    {
+                        cardSelector = new InputSelectCard(this, haveCardList);
+                    }
+                    cardSelector.isPlaying = true;
                     cardSelector.Update();
+
                     break;
                 }
 
@@ -378,8 +387,6 @@ public class PlayClient
         {
             ResGameOver(_validData);
             SetGameOver();
-            cardSelector.isPlaying = false;
-
         }
     }
 
@@ -399,7 +406,7 @@ public class PlayClient
          * [1] 카드 장수
          * [2] 번부터 2개씩 카드가 생성
          */
-        haveCardList = new();
+        haveCardList.Clear();
         for (int i = 2; i < _resDate.Length; i += 2)
         {
             //i번째는 카드 무늬, i+1에는 카드 넘버가 있음
