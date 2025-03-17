@@ -221,6 +221,16 @@ public class PlayClient
         }
     }
 
+    public void SetSelectCardList(List<CardData> _selectCards)
+    {
+        selecetCardList = _selectCards;
+    }
+
+    public void ResetSelectCard()
+    {
+        selecetCardList.Clear();
+    }
+
     private void SelectPutCards()
     {
         ColorConsole.Default("제출할 카드를 골라 주세요 1,2,3,4");
@@ -228,24 +238,19 @@ public class PlayClient
         {
             while (true)
             {
-                //제출할 카드 입력
-                string cardStr = Console.ReadLine();
-                selecetCardList = new();
                 if (isGameStart == false)
                 {
                     break;
                 }
 
-                if (isMyTurn == false)
+                if (selecetCardList.Count == 0)
                 {
-                    ColorConsole.Default("자기 차례가 아닙니다.");
                     continue;
                 }
 
-                //입력 유효 체크
-                if (CheckValidInput(cardStr) == false)
+                if (isMyTurn == false)
                 {
-
+                    ColorConsole.Default("자기 차례가 아닙니다.");
                     continue;
                 }
 
@@ -255,49 +260,13 @@ public class PlayClient
                     //낼 수 있으면 제출
                     ReqPutDownCard(selecetCardList);
                 }
-
+                ResetSelectCard();
             }
         });
 
     }
 
-    private bool CheckValidInput(string cardStr)
-    {
-        //잘 골랐는지 체크
-        cardStr = cardStr.Replace(" ", "");//공백제거
-        string[] selectCards = cardStr.Split(","); //콤마로 구별
-        int validCount = 0;
-        for (int i = 0; i < selectCards.Length; i++)
-        {
-            if (Int32.TryParse(selectCards[i], out int selectCard) && (selectCard == 22 || 0 <= selectCard && selectCard < haveCardList.Count))
-            {
-                if (selectCard == 22)
-                {
-                    ColorConsole.Default("패스");
-                    validCount++;
-                    break; ;
-                }
-
-                ColorConsole.Default($"{haveCardList[selectCard].cardClass}:{haveCardList[selectCard].num} 카드 선택");
-                selecetCardList.Add(haveCardList[selectCard]);
-                validCount++;
-            }
-            else
-            {
-                ColorConsole.Default("유효 숫자가 아닙니다.");
-                break;
-            }
-
-        }
-
-        if (validCount != selectCards.Length)
-        {
-            //잘못 입력된게 있으면 실패
-            return false;
-        }
-        return true;
-    }
-
+   
     private bool CheckSelectCard()
     {
         CardRule cardRule = new CardRule();
