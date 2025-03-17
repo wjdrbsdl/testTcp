@@ -25,7 +25,6 @@ public class PlayClient
     public string state = "";
     public List<CardData> haveCardList; //내가 들고 있는 카드
     public List<CardData> giveCardList; //전에 내가 냈던 카드
-    public List<CardData> selecetCardList; //이번턴에 내가 선택한 카드
     public List<CardData> putDownList; //바닥에 깔린 카드
     public bool isMyTurn = false;
     public bool isGameStart = false;
@@ -40,7 +39,6 @@ public class PlayClient
         port = _port;
         haveCardList = new();
         giveCardList = new();
-        selecetCardList = new();
     }
 
     #region 연결 수신
@@ -100,7 +98,6 @@ public class PlayClient
     {
         //보유 카드는 통신응답에서 진행
         giveCardList = new();
-        selecetCardList = new();
         putDownList = new();
         gameTurn = 0;
         isMyTurn = false;
@@ -111,7 +108,6 @@ public class PlayClient
     {
         ColorConsole.Default("스테이지 리셋");
         giveCardList = new();
-        selecetCardList = new();
         putDownList = new();
         gameTurn = 0;
         isMyTurn = false;
@@ -125,6 +121,8 @@ public class PlayClient
         EnterMessege();
     }
 
+
+    InputSelectCard cardSelector;
     private void EnterMessege()
     {
         //채팅 기능 한번만 오픈되도록
@@ -145,7 +143,8 @@ public class PlayClient
                 if (isGameStart == true)
                 {
                     //TestMixture();
-                    SelectPutCards();
+                    cardSelector = new InputSelectCard(this, haveCardList);
+                    cardSelector.Update();
                     break;
                 }
 
@@ -168,110 +167,36 @@ public class PlayClient
        
     }
 
-    private void TestMixture()
+  
+    public bool PutDownCards(List<CardData> _selectCards)
     {
-        ColorConsole.Default("제출할 카드를 골라 주세요 1,2,3,4");
-        while (true)
+        if (isGameStart == false)
         {
-            string card = Console.ReadLine();
-            selecetCardList = new();
-
-            card = card.Replace(" ", "");//공백제거
-            string[] selectCards = card.Split(","); //콤마로 구별
-            int validCount = 0;
-            for (int i = 0; i < selectCards.Length; i++)
-            {
-                char cardClass = selectCards[i][0];
-                CardClass selectClass = CardClass.Spade;
-                if (cardClass == 'd')
-                {
-                    selectClass = CardClass.Dia;
-                }
-                else if (cardClass == 'h')
-                {
-                    selectClass = CardClass.Heart;
-                }
-                else if (cardClass == 'c')
-                {
-                    selectClass = CardClass.Clover;
-                }
-                string cardNum = selectCards[i].Substring(1);
-                if (int.TryParse(cardNum, out int parseCardNum) && 0 <= parseCardNum && parseCardNum <= 13)
-                {
-                    CardData newCard = new CardData(selectClass, parseCardNum);
-                    selecetCardList.Add(newCard);
-                }
-            }
-
-            CardRule cardRule = new CardRule();
-            TMixture mixtureValue = new TMixture();
-            if (cardRule.IsVarid(selecetCardList, out mixtureValue) == true)
-            {
-                CheckSelectCard();
-                {
-                    putDownList.Clear();
-                    for (int i = 0; i < selecetCardList.Count; i++)
-                    {
-                        putDownList.Add(selecetCardList[i]);
-                    }
-
-                }
-
-            }
+            return false;
         }
-    }
-
-    public void SetSelectCardList(List<CardData> _selectCards)
-    {
-        selecetCardList = _selectCards;
-    }
-
-    public void ResetSelectCard()
-    {
-        selecetCardList.Clear();
-    }
-
-    private void SelectPutCards()
-    {
-        ColorConsole.Default("제출할 카드를 골라 주세요 1,2,3,4");
-        Task.Run(() =>
+  
+        if (isMyTurn == false)
         {
-            while (true)
-            {
-                if (isGameStart == false)
-                {
-                    break;
-                }
-
-                if (selecetCardList.Count == 0)
-                {
-                    continue;
-                }
-
-                if (isMyTurn == false)
-                {
-                    ColorConsole.Default("자기 차례가 아닙니다.");
-                    continue;
-                }
-
-                //낼 수 있는 카드 인지 체크
-                if (CheckSelectCard())
-                {
-                    //낼 수 있으면 제출
-                    ReqPutDownCard(selecetCardList);
-                }
-                ResetSelectCard();
-            }
-        });
+            ColorConsole.Default("자기 차례가 아닙니다.");
+            return false;
+        }
+        //낼 수 있는 카드 인지 체크
+        if (CheckSelectCard(_selectCards))
+        {
+            //낼 수 있으면 제출
+            SetMyTurn(false); //내턴 넘김으로 수정
+            ReqPutDownCard(_selectCards);
+            return true;
+        }
+        return false;
 
     }
 
-   
-    private bool CheckSelectCard()
+    private bool CheckSelectCard(List<CardData> _selectCards)
     {
         CardRule cardRule = new CardRule();
         TMixture selectCardValue = new TMixture();
-        if (cardRule.IsVarid(selecetCardList, out selectCardValue) == false)
+        if (cardRule.IsVarid(_selectCards, out selectCardValue) == false)
         {
             ColorConsole.Default("유효한 조합이 아닙니다.");
             return false;
@@ -283,7 +208,7 @@ public class PlayClient
         if (gameTurn == 1)
         {
             //첫번째 턴이면 보유한 카드에 스페이드 3 있어야 가능 한걸로 
-            foreach (CardData card in selecetCardList)
+            foreach (CardData card in _selectCards)
             {
                 if (card.Compare(CardData.minClass, CardData.minRealValue) == 0)
                 {
@@ -297,7 +222,7 @@ public class PlayClient
         //처음이 아니면 내가 낸건지 체크 - 내가 낸거면 자유롭게 내기 가능
         if (CheckAllPass())
         {
-            if (selecetCardList.Count == 0)
+            if (_selectCards.Count == 0)
             {
                 ColorConsole.Default("올 패스 받은 상태에서 내가 패스는 불가");
                 return false;
@@ -362,6 +287,11 @@ public class PlayClient
 
         return false;
 
+    }
+
+    private void SetMyTurn(bool _turn)
+    {
+        isMyTurn = _turn;
     }
 
     #region 카드 리스트 관리
@@ -448,6 +378,7 @@ public class PlayClient
         {
             ResGameOver(_validData);
             SetGameOver();
+            cardSelector.isPlaying = false;
 
         }
     }
