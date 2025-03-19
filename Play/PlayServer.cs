@@ -33,7 +33,7 @@ namespace testTcp
         {
             ColorConsole.ConsoleColor("룸 서버 시작");
             linkSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 5001);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 5002);
             linkSocket.Bind(endPoint);
             linkSocket.Listen(4);
             MakeCards(); //
@@ -442,33 +442,73 @@ namespace testTcp
 
             //4 명의 유저에게
             int giveCardIndex = 0;
-            for(int userIndex = 0; userIndex < roomUser.Count; userIndex++)
+            turnId = -1; //턴 아이디 리셋 
+            List<byte[]> cardByteList = new();
+            int cardDataStartIdx = 0;
+            for (int userIndex = 0; userIndex < roomUser.Count; userIndex++)
             {
                 // (byte)카드클래스, (byte)num 순으로 해당 리스트에 추가
                 List<byte> cardList = new();
                 cardList.Add((byte)ReqRoomType.Start);//요청 코드
                 cardList.Add((byte)13);//줄 숫자
+                cardDataStartIdx = cardList.Count(); //패킷에서 카드 시작 인덱스를 저장하기 위해서
                 /*
                  * [0] 요청코드 게임스타트
                  * [1] 카드 숫자
                  */
                 //13장씩
+
                 for (int cardCount = 1; cardCount <= 13; cardCount++)
                 {
                     CardData selectCard = cards[giveCardIndex];
                     giveCardIndex++;
+                   
                     cardList.Add((byte)selectCard.cardClass);
                     cardList.Add((byte)selectCard.num);
                     if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
-                    {
+                    {                                                                                                                                                                                                             
                         turnId = roomUser[userIndex].ID; //서버에서 누가 시작인지 알고 있을것. 
                     }
                 }
                 byte[] cardByte = cardList.ToArray();
-                roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
-                roomUser[userIndex].workingSocket.Send(cardByte);
+                cardByteList.Add(cardByte);
+             
             }
 
+            //유저들 중 한명은 무조건 시작 카드를 갖고있도록
+            if(turnId == -1)
+            {
+                //플레이어중에 시작자가 없으면
+                Random ranChanger = new Random();
+                int ranIdx = ranChanger.Next(0, roomUser.Count); //바꿀애 골라서
+                for (int i = giveCardIndex; i < cards.Length; i++)
+                {
+                    CardData selectCard = cards[i];
+                    if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
+                    {
+                        //할당받은 애의 카드중에 첫번째껄 복사해놓고
+                        //2,3 하드코딩은 패킷 내용이 달라지면 바꿔줘야함. 
+                        CardData copy = new CardData(
+                            (CardClass)cardByteList[ranIdx][cardDataStartIdx],
+                            cardByteList[ranIdx][cardDataStartIdx+1]);
+                        //패킷 데이터에서 시작 카드를 넣고
+                        cardByteList[ranIdx][cardDataStartIdx] = (byte)CardData.minClass;
+                        cardByteList[ranIdx][cardDataStartIdx+1] = (byte)CardData.minRealValue;
+                        //시작 아이디 저장하고
+                        turnId = roomUser[ranIdx].ID; //서버에서 누가 시작인지 알고 있을것. 
+                        cards[i] = copy; //여기있던 카드는 카피된걸로 변경
+                        break;
+                    }
+                }
+
+             
+            }
+
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].HaveCard = 13; //최초 13장으로 세팅.
+                roomUser[i].workingSocket.Send(cardByteList[i]);
+            }
         }
 
         private void AnnouceParty()

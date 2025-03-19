@@ -139,7 +139,7 @@ public class LobbyClient
         }
         //아이피 주소 생성
         IPAddress address = new IPAddress(ip);
-        int portNum = 5001;
+        int portNum = 5002;
 
         //방이름 파싱
         int roomNameLength = _receiveData[3];
