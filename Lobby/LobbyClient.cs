@@ -56,7 +56,7 @@ public class LobbyClient
         try
         {
             ColorConsole.Default("로비 클라 연결 콜백" );
-            byte[] buff = new byte[100];
+            byte[] buff = new byte[2];
             clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
             //접속했으면 접속한 넘버링 요구
             ReqClientNumber();
@@ -73,20 +73,37 @@ public class LobbyClient
         try
         {
             ColorConsole.Default("로비 클라 리십 콜백");
-            byte[] receiveBuff = _result.AsyncState as byte[];
+            byte[] msgLengthBuff = _result.AsyncState as byte[];
 
-            ReqLobbyType reqType = (ReqLobbyType)receiveBuff[0];
+            ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+
+            byte[] recvBuffer = new byte[msgLength];
+            byte[] recvData = new byte[msgLength];
+            int recv = 0;
+            int recvIdx = 0;
+            int rest = msgLength;
+            do
+            {
+                recv = clientSocket.Receive(recvBuffer);
+                Buffer.BlockCopy(recvBuffer, 0, recvData, recvIdx, recv);
+                recvIdx += recv;
+                rest -= recv;
+                recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
+            } while (rest >= 1);
+
+
+            ReqLobbyType reqType = (ReqLobbyType)recvData[0];
             if (reqType == ReqLobbyType.RoomMake)
             {
-                ResRoomJoin(receiveBuff);
+                ResRoomJoin(recvData);
             }
             else if(reqType == ReqLobbyType.ClientNumber)
             {
-                ResClientNumber(receiveBuff);
+                ResClientNumber(recvData);
             }
 
             if(clientSocket.Connected)
-                clientSocket.BeginReceive(receiveBuff, 0, receiveBuff.Length, 0, CallBackReceive, receiveBuff);
+                clientSocket.BeginReceive(msgLengthBuff, 0, msgLengthBuff.Length, 0, CallBackReceive, msgLengthBuff);
         }
         catch
         {
@@ -103,7 +120,7 @@ public class LobbyClient
         byte[] reqRoom = new byte[roomByte.Length + 1];
         Array.Copy(roomByte, 0, reqRoom, 1, roomByte.Length); //룸 네임 전체를 요청 바이트 1번째부터 복사시작
         reqRoom[0] = (byte)ReqLobbyType.RoomMake;
-        clientSocket.Send(reqRoom);
+        SendMessege(reqRoom);
     }
 
     private void ResRoomJoin(byte[] _receiveData)
@@ -174,13 +191,13 @@ public class LobbyClient
     {
         ColorConsole.Default("종료 요청");
         byte[] reqClaDisconnect = new byte[] { (byte)ReqLobbyType.Close };
-        clientSocket.Send(reqClaDisconnect);
+        SendMessege(reqClaDisconnect);
     }
 
     private void ReqClientNumber()
     {
         byte[] reqClientNumber = new byte[] { (byte)ReqLobbyType.ClientNumber };
-        clientSocket.Send(reqClientNumber);
+        SendMessege(reqClientNumber);
     }
 
     private void ResClientNumber(byte[] receiveBuff)
@@ -192,6 +209,27 @@ public class LobbyClient
 
         id = receiveBuff[1];
         ColorConsole.Default("클라 넘버 " + id);
+    }
+
+    private void SendMessege(byte[] _msg)
+    {
+        ushort msgLength = (ushort)_msg.Length;
+        byte[] msgLengthBuff = new byte[2];
+        msgLengthBuff = BitConverter.GetBytes(msgLength);
+
+        byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+        Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+        Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+
+        int rest = (msgLength + msgLengthBuff.Length);
+        int send = 0;
+        do
+        {
+            byte[] sendPacket = new byte[rest];
+            Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+            send = clientSocket.Send(sendPacket);
+            rest -= send;
+        } while (rest >= 1);
     }
 
     bool isLobby = true;
