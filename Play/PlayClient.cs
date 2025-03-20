@@ -89,6 +89,11 @@ public class PlayClient
                 recvIdx += recv;
                 rest -= recv;
                 recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
+                if (recv == 0)
+                {
+                    //만약 남은게있으면 어떡함?
+                    break;
+                }
             } while (rest>=1);
 
             ReqRoomType reqType = (ReqRoomType)recvData[0];

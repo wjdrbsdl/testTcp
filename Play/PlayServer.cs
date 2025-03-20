@@ -106,6 +106,11 @@ namespace testTcp
                     recvIdx += recv;
                     rest -= recv;
                     recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
+                    if (recv == 0)
+                    {
+                        //만약 남은게있으면 어떡함?
+                        break;
+                    }
                 } while (rest >= 1);
 
                 HandleReq(cla, recvData);
@@ -439,7 +444,7 @@ namespace testTcp
                 Socket socket = roomUser[i].workingSocket;
                 if (socket.Connected)
                 {
-                    socket.Send(msg);
+                    SendMessege(socket, msg);
                 }
 
             }
@@ -658,7 +663,7 @@ namespace testTcp
             byte[] name = Encoding.Unicode.GetBytes(roomName);
             byte[] roomStateCode = new byte[] { (byte)ReqLobbyType.RoomState, (byte)RoomState, (byte)name.Length };
             byte[] reqStateByte = roomStateCode.Concat(name).ToArray();
-            linkStateLobby.Send(reqStateByte);
+            SendMessege(linkStateLobby, reqStateByte);
             linkStateLobby.Close();
             linkStateLobby.Dispose();
         }
@@ -701,7 +706,6 @@ namespace testTcp
             byte[] resRoomCount = roomCode.Concat(name).ToArray();
 
             SendMessege(linkRoomCount, resRoomCount);
-            linkRoomCount.Send(resRoomCount);
             linkRoomCount.Close();
             linkRoomCount.Dispose();
         }

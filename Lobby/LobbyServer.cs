@@ -92,12 +92,11 @@ public class LobbyServer
     {
         try
         {
-
             AsyncObject asyObj = (AsyncObject)ar.AsyncState;
+            
             byte[] msgLengthBuff = asyObj.Buffer;
 
             ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
-
             byte[] recvBuffer = new byte[msgLength];
             byte[] recvData = new byte[msgLength];
             int recv = 0;
@@ -110,7 +109,14 @@ public class LobbyServer
                 recvIdx += recv;
                 rest -= recv;
                 recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
-            } while (rest >= 1);
+                if (recv == 0)
+                {
+                    //만약 남은게있으면 어떡함?
+                    break;
+                }
+
+            }
+            while (rest>=1);
 
             Console.WriteLine("요청 받음 " + (ReqLobbyType)recvData[0]);
       
@@ -140,7 +146,6 @@ public class LobbyServer
         }
         else if (reqType == ReqLobbyType.Close)
         {
-            ColorConsole.ConsoleColor("종료 요청 받음");
             AddRemoveSokect(_obj.numbering);
         }
         else if (reqType == ReqLobbyType.RoomState)
