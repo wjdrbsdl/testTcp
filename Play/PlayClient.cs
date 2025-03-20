@@ -75,7 +75,6 @@ public class PlayClient
         try
         {
             byte[] msgLengthBuff = _result.AsyncState as byte[]; //받을그릇을 2개로 받기 - 메시지 길이 정의
-            int recvMsg = clientSocket.Receive(msgLengthBuff); //2개는 받아야는디
             ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
 
             byte[] recvBuffer = new byte[msgLength];
