@@ -191,7 +191,7 @@ public class PlayClient
     public void TestGameOver()
     {
         byte[] reqGameOver = new byte[] { (byte)ReqRoomType.ReqGameOver };
-        clientSocket.Send(reqGameOver);
+        SendMessege(reqGameOver);
     }
   
     public bool PutDownCards(List<CardData> _selectCards)
@@ -409,10 +409,34 @@ public class PlayClient
 
     #region 통신 파트
     #region 게임 시작
+
+    private void SendMessege(byte[] _sendData)
+    {
+        //헤더작업 용량 길이 붙여주기 
+        Console.WriteLine("플클에서 요청 보냄 " + (ReqRoomType)_sendData[0]);
+        ushort msgLength = (ushort)_sendData.Length;
+        byte[] msgLengthBuff = new byte[2];
+        msgLengthBuff = BitConverter.GetBytes(msgLength);
+
+        byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+        Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+        Buffer.BlockCopy(_sendData, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+
+        int rest = (msgLength + msgLengthBuff.Length);
+        int send = 0;
+        do
+        {
+            byte[] sendPacket = new byte[rest];
+            Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+            send = clientSocket.Send(sendPacket);
+            rest -= send;
+        } while (rest >= 1);
+    }
+
     private void ReqGameStart()
     {
         byte[] reqStart = { (byte)ReqRoomType.Start };
-        clientSocket.Send(reqStart);
+        SendMessege(reqStart);
     }
 
     private void ResGameStart(byte[] _resDate)
@@ -449,7 +473,7 @@ public class PlayClient
     public void ReqRegisterClientID()
     {
         byte[] reqID = new byte[] { (byte)ReqRoomType.IDRegister, (byte)id };
-        clientSocket.Send(reqID);
+        SendMessege(reqID);
     }
 
     public void ResRegisterClientIDToPartyID(byte[] _data)
@@ -477,7 +501,7 @@ public class PlayClient
     {
         ColorConsole.Default("클라가 나가기 요청");
         byte[] reqRoomOut = new byte[] { (byte)ReqRoomType.RoomOut, (byte)id };
-        clientSocket.Send(reqRoomOut);
+        SendMessege(reqRoomOut);
   
         clientSocket.Close();
         clientSocket.Dispose();
@@ -512,7 +536,7 @@ public class PlayClient
             reqCardList.Add((byte)_cardDataList[i].num);
         }
         byte[] reqData = reqCardList.ToArray();
-        clientSocket.Send(reqData);
+        SendMessege(reqData);
     }
 
     private void ResPutDownCard(byte[] _data)
@@ -610,7 +634,7 @@ public class PlayClient
          * [1] 내 아이디
          */
         byte[] stageReadyDate = new byte[] { (byte)ReqRoomType.StageReady, (byte)id };
-        clientSocket.Send(stageReadyDate);
+        SendMessege(stageReadyDate);
     }
 
     private void ResGameOver(byte[] _data)
@@ -636,7 +660,7 @@ public class PlayClient
         byte[] reqByte = chatCode.Concat(chatByte).ToArray();
         //  Console.WriteLine("클라 센드" + mainSock.Connected);
         if (clientSocket.Connected == true)
-            clientSocket.Send(reqByte);
+            SendMessege(reqByte);
     }
 
     private void ResChat(byte[] _receiveData)
