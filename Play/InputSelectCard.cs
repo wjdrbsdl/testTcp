@@ -26,6 +26,12 @@ public class InputSelectCard
             while (isPlaying)
             {
                 string inputStr = Console.ReadLine();
+                if(inputStr == "gameover")
+                {
+                    SendGameOver();
+                    break;
+                }
+
                 selectCardList.Clear();
                 if (CheckValidInput(inputStr) == false)
                 {
@@ -83,6 +89,10 @@ public class InputSelectCard
         pClient.PutDownCards(selectCardList);
     }
 
+    public void SendGameOver()
+    {
+        pClient.TestGameOver();
+    }
 
     //private void TestMixture()
     //{
