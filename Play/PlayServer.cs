@@ -491,8 +491,7 @@ namespace testTcp
                 }
                 byte[] cardByte = cardList.ToArray();
                 roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
-                roomUser[userIndex].workingSocket.Send(cardByte);
-
+                SendMessege(cardByte, userIndex);
             }
       
         }
@@ -545,10 +544,8 @@ namespace testTcp
                     //제출한 녀석을 찾아서
                     turnIndex = i; //얘 차례 인덱스 뽑고
                 }
-              
-                //낸 유저를 포함 모든 유저들에게 해당 유저가 어떤걸 냈는지 전달.
-                roomUser[i].workingSocket.Send(_putDownCardData);
             }
+            SendMessege(_putDownCardData);
             //현재 차례였던애 turnIndex;
             turnId = roomUser[(turnIndex + 1) % roomUser.Count].ID;
         }
@@ -584,10 +581,47 @@ namespace testTcp
 
         private void SendMessege(byte[] _messege)
         {
+            //헤더작업 용량 길이 붙여주기 
+            ushort msgLength = (ushort)_messege.Length;
+            byte[] msgLengthBuff = new byte[2];
+            msgLengthBuff = BitConverter.GetBytes(msgLength);
+
+            byte[] packet = new byte[msgLengthBuff.Length + msgLength];
+            Buffer.BlockCopy(msgLengthBuff, 0, packet, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+            Buffer.BlockCopy(_messege, 0, packet, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
             for (int i = 0; i < roomUser.Count; i++)
             {
-                roomUser[i].workingSocket.Send(_messege);
+                int rest = msgLength;
+                int send = 0;
+                do
+                {
+                    send = roomUser[i].workingSocket.Send(packet);
+                    rest -= send;
+                } while (rest >= 1);
+                
             }
+        }
+
+        private void SendMessege(byte[] _msg, int _target)
+        {
+            //헤더작업 용량 길이 붙여주기 
+            ushort msgLength = (ushort)_msg.Length;
+            byte[] msgLengthBuff = new byte[2];
+            msgLengthBuff = BitConverter.GetBytes(msgLength);
+
+            byte[] packet = new byte[msgLengthBuff.Length + msgLength];
+            Buffer.BlockCopy(msgLengthBuff, 0, packet, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+            Buffer.BlockCopy(_msg, 0, packet, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+
+            int rest = msgLength;
+            int send = 0;
+            do
+            {
+                send = roomUser[_target].workingSocket.Send(packet);
+                rest -= send;
+            } while (rest >= 1);
+
+
         }
 
         #region 룸 상태 변경 전달
