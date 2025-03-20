@@ -71,7 +71,7 @@ namespace testTcp
             {
                 ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
-                ClaInfo newCla = new ClaInfo(100, client);
+                ClaInfo newCla = new ClaInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
                 SendRoomCount(); //참가에 따른 변경 인원 전달
@@ -90,14 +90,25 @@ namespace testTcp
             {
                // ColorConsole.ConsoleColor("룸     서버로서 리시브");
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
-                byte[] recevieBuff = cla.buffer;
-                int received = cla.workingSocket.EndReceive(ar);
-                byte[] validData = new byte[received];
-                Array.Copy(cla.buffer, 0, validData, 0, received);
-                //SendChat(cla.buffer, cla.ID);
-                ////Send(obj.Buffer);
-                //HandleRoomMaker(obj, buffer);
-                HandleReq(cla, validData);
+                byte[] msgLengthBuff = cla.buffer;
+
+                ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+
+                byte[] recvBuffer = new byte[msgLength];
+                byte[] recvData = new byte[msgLength];
+                int recv = 0;
+                int recvIdx = 0;
+                int rest = msgLength;
+                do
+                {
+                    recv = cla.workingSocket.Receive(recvBuffer);
+                    Buffer.BlockCopy(recvBuffer, 0, recvData, recvIdx, recv);
+                    recvIdx += recv;
+                    rest -= recv;
+                    recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
+                } while (rest >= 1);
+
+                HandleReq(cla, recvData);
 
 
                 //obj.ClearBuffer();
@@ -106,6 +117,7 @@ namespace testTcp
             }
             catch 
             {
+                
                 ClaInfo obj = (ClaInfo)ar.AsyncState;
                 ExitClient((byte)obj.ID);
             }
@@ -581,34 +593,19 @@ namespace testTcp
 
         private void SendMessege(byte[] _messege)
         {
-            //헤더작업 용량 길이 붙여주기 
-            ushort msgLength = (ushort)_messege.Length;
-            byte[] msgLengthBuff = new byte[2];
-            msgLengthBuff = BitConverter.GetBytes(msgLength);
-
-            byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
-            Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
-            Buffer.BlockCopy(_messege, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
             for (int i = 0; i < roomUser.Count; i++)
             {
-                int rest = msgLength + msgLengthBuff.Length;
-                int send = 0;
-                do
-                {
-                    //보낼 패킷을 남은 것만큼 쪼개서 보내기
-                    byte[] sendPacket = new byte[rest];
-                    Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
-                    send = roomUser[i].workingSocket.Send(sendPacket);
-                    rest -= send;
-                    
-                } while (rest >= 1);
-                
+                SendMessege(roomUser[i].workingSocket, _messege);
             }
         }
 
         private void SendMessege(byte[] _msg, int _target)
         {
-            //헤더작업 용량 길이 붙여주기 
+            SendMessege(roomUser[_target].workingSocket, _msg);
+        }
+
+        private void SendMessege(Socket _target, byte[] _msg)
+        {
             ushort msgLength = (ushort)_msg.Length;
             byte[] msgLengthBuff = new byte[2];
             msgLengthBuff = BitConverter.GetBytes(msgLength);
@@ -617,17 +614,15 @@ namespace testTcp
             Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
             Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
 
-            int rest = (msgLength+ msgLengthBuff.Length);
+            int rest = (msgLength + msgLengthBuff.Length);
             int send = 0;
             do
             {
                 byte[] sendPacket = new byte[rest];
                 Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
-                send = roomUser[_target].workingSocket.Send(sendPacket);
+                send = _target.Send(sendPacket);
                 rest -= send;
             } while (rest >= 1);
-
-
         }
 
         #region 룸 상태 변경 전달
@@ -705,6 +700,7 @@ namespace testTcp
             byte[] roomCode = new byte[] { (byte)ReqLobbyType.RoomUserCount, (byte)roomUser.Count, (byte)name.Length };
             byte[] resRoomCount = roomCode.Concat(name).ToArray();
 
+            SendMessege(linkRoomCount, resRoomCount);
             linkRoomCount.Send(resRoomCount);
             linkRoomCount.Close();
             linkRoomCount.Dispose();
