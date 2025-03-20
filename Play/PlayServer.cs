@@ -586,17 +586,21 @@ namespace testTcp
             byte[] msgLengthBuff = new byte[2];
             msgLengthBuff = BitConverter.GetBytes(msgLength);
 
-            byte[] packet = new byte[msgLengthBuff.Length + msgLength];
-            Buffer.BlockCopy(msgLengthBuff, 0, packet, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
-            Buffer.BlockCopy(_messege, 0, packet, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+            byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+            Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+            Buffer.BlockCopy(_messege, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
             for (int i = 0; i < roomUser.Count; i++)
             {
-                int rest = msgLength;
+                int rest = msgLength + msgLengthBuff.Length;
                 int send = 0;
                 do
                 {
-                    send = roomUser[i].workingSocket.Send(packet);
+                    //보낼 패킷을 남은 것만큼 쪼개서 보내기
+                    byte[] sendPacket = new byte[rest];
+                    Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+                    send = roomUser[i].workingSocket.Send(sendPacket);
                     rest -= send;
+                    
                 } while (rest >= 1);
                 
             }
@@ -609,15 +613,17 @@ namespace testTcp
             byte[] msgLengthBuff = new byte[2];
             msgLengthBuff = BitConverter.GetBytes(msgLength);
 
-            byte[] packet = new byte[msgLengthBuff.Length + msgLength];
-            Buffer.BlockCopy(msgLengthBuff, 0, packet, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
-            Buffer.BlockCopy(_msg, 0, packet, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+            byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+            Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+            Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
 
-            int rest = msgLength;
+            int rest = (msgLength+ msgLengthBuff.Length);
             int send = 0;
             do
             {
-                send = roomUser[_target].workingSocket.Send(packet);
+                byte[] sendPacket = new byte[rest];
+                Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+                send = roomUser[_target].workingSocket.Send(sendPacket);
                 rest -= send;
             } while (rest >= 1);
 
