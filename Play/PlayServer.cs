@@ -15,8 +15,6 @@ namespace testTcp
         ArrangeTurn,
         StageReady, StageOver, GameOver,
         ReqGameOver
-
-
     }
 
     public class PlayServer
@@ -161,6 +159,9 @@ namespace testTcp
                 RoomState = RoomState.Play;
                 SendRoomStateToLobbyServer();
                 UserScoreReset(); //유저 점수 리셋
+                //섞고
+                ShuffleCard();
+                ShuffleTurn();
                 AnnouceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
             }
@@ -183,7 +184,7 @@ namespace testTcp
                 {
                     //아직 게임 오버가 아니라면
                     AnnouceStageOver(); //스테이지 끝났다고 알리고
-                    ReadyNexStage(); //다음 스테이지 준비
+                    StartNexStage(); //다음 스테이지 준비
                     return;
                 }
                 //5. 게임오버 된거면 게임오버 호출
@@ -192,6 +193,7 @@ namespace testTcp
             }
             else if(reqType == ReqRoomType.StageReady)
             {
+                //유저들로 부터 다음 스테이지 진행할 준비가 되었음을 확인
                 ResStageReadyPlayer(_reqData);
             }
             else if (reqType == ReqRoomType.ReqGameOver)
@@ -200,14 +202,7 @@ namespace testTcp
             }
         }
 
-        private void UserScoreReset()
-        {
-            for (int i = 0; i < roomUser.Count; i++)
-            {
-                roomUser[i].ResetScore();
-            }
-        }
-
+     
         #region 벌점, 스테이지, 게임 종료 체크
         private void CalBadPoint()
         {
@@ -309,7 +304,15 @@ namespace testTcp
             ColorConsole.ConsoleColor("순서 " + turn);
         }
 
-        private void ReadyNexStage()
+        private void UserScoreReset()
+        {
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].ResetScore();
+            }
+        }
+
+        private void StartNexStage()
         {
             //스테이지가 끝나면 큐를 청소하고,
             //매 프레임마다 큐를 확인해서 준비가 된 id를 확인 
@@ -331,6 +334,9 @@ namespace testTcp
                     }
                 }
                 ColorConsole.ConsoleColor(curUserCount +"명의 준비 확인 다음 스테이지 시작");
+                //섞고
+                ShuffleCard();
+                ShuffleTurn();
                 AnnouceCardArrange();
                 AnnounceTurnPlayer();
             });
@@ -424,29 +430,6 @@ namespace testTcp
         }
         #endregion
 
-        private void AnnouceGameOver()
-        {
-            //게임 오버시 전달할것들
-            roomUser.Sort((a, b) => a.BadPoint.CompareTo(b.BadPoint)); //벌점 오름순으로 정렬
-            /*
-             * [0] 종료코드 GameOver
-             * [1] 유저수 - 순위대로 정렬
-             * [2] 보낼 정보 데이터 길이 일단 2
-             * [3] 유저 ID
-             * [4] 유저 벌점
-             */
-            List<byte> overDate = new();
-            overDate.Add((byte)ReqRoomType.GameOver);
-            overDate.Add((byte)roomUser.Count);
-            overDate.Add(2); //보낼 데이터 길이
-            for (int i = 0; i < roomUser.Count; i++)
-            {
-                overDate.Add((byte)roomUser[i].ID);
-                overDate.Add((byte)roomUser[i].BadPoint);
-            }
-            SendMessege(overDate.ToArray());
-        }
-
         #region 통신
         private void SendChat(byte[] msg, int _receiveNumbering)
         {
@@ -473,15 +456,10 @@ namespace testTcp
         {
             ColorConsole.ConsoleColor($"{_exitID}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
             AddRemoveSokect(_exitID);
-           
         }
 
         private void AnnouceCardArrange()
         {
-            //섞고
-            ShuffleCard();
-            ShuffleTurn();
-
             int useCardCount = roomUser.Count * 13; //나눠줄 카드 수
             for (int i = useCardCount; i < cards.Length; i++)
             {
@@ -561,6 +539,13 @@ namespace testTcp
             SendMessege(partyDataByte);
         }
 
+        private void AnnounceTurnPlayer()
+        {
+            ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
+            byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
+            SendMessege(turnData);
+        }
+
         private void AnnoucePutDownCard(byte[] _putDownCardData)
         {
             /*
@@ -609,13 +594,31 @@ namespace testTcp
             SendMessege(announceData);
         }
 
-        private void AnnounceTurnPlayer()
+        private void AnnouceGameOver()
         {
-            ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
-            byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
-            SendMessege(turnData);
+            //게임 오버시 전달할것들
+            roomUser.Sort((a, b) => a.BadPoint.CompareTo(b.BadPoint)); //벌점 오름순으로 정렬
+            /*
+             * [0] 종료코드 GameOver
+             * [1] 유저수 - 순위대로 정렬
+             * [2] 보낼 정보 데이터 길이 일단 2
+             * [3] 유저 ID
+             * [4] 유저 벌점
+             */
+            List<byte> overDate = new();
+            overDate.Add((byte)ReqRoomType.GameOver);
+            overDate.Add((byte)roomUser.Count);
+            overDate.Add(2); //보낼 데이터 길이
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                overDate.Add((byte)roomUser[i].ID);
+                overDate.Add((byte)roomUser[i].BadPoint);
+            }
+            SendMessege(overDate.ToArray());
         }
 
+
+        #region 패킷 전달
         private void SendMessege(byte[] _messege)
         {
             for (int i = 0; i < roomUser.Count; i++)
@@ -649,6 +652,7 @@ namespace testTcp
                 rest -= send;
             } while (rest >= 1);
         }
+        #endregion
 
         #region 룸 상태 변경 전달
         public void SendRoomStateToLobbyServer()
