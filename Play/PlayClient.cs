@@ -609,6 +609,7 @@ public class PlayClient
     }
     #endregion
 
+    #region 판, 게임 종료
     private void ResStageOver(byte[] _data)
     {
         /*
@@ -656,6 +657,7 @@ public class PlayClient
             ColorConsole.Default($"{_data[i]}의 벌점 :{_data[i + 1]}");
         }
     }
+    #endregion
 
     #region 채팅 
     private void ReqChat(string msg)
