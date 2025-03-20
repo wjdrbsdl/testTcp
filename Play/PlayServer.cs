@@ -13,7 +13,8 @@ namespace testTcp
         IDRegister, PartyData,
         ShuffleCard, PutDownCard,
         ArrangeTurn,
-        StageReady, StageOver, GameOver
+        StageReady, StageOver, GameOver,
+        ReqGameOver
 
 
     }
@@ -175,6 +176,10 @@ namespace testTcp
             else if(reqType == ReqRoomType.StageReady)
             {
                 ResStageReadyPlayer(_reqData);
+            }
+            else if (reqType == ReqRoomType.ReqGameOver)
+            {
+                GameOver();
             }
         }
 
@@ -440,10 +445,24 @@ namespace testTcp
             //섞고
             ShuffleCard();
 
+            int useCardCount = roomUser.Count * 13; //나눠줄 카드 수
+            for (int i = useCardCount; i < cards.Length; i++)
+            {
+                CardData selectCard = cards[i];
+                if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
+                {
+                    //나누지 못한 카드 중에 시작 카드가 있으면, 앞에 어떤것과 해당 카드를 바꿀것. 
+                    Random ran = new Random();
+                    int changeIdx = ran.Next(0, useCardCount);
+                    CardData copy = cards[changeIdx];
+                    cards[changeIdx] = selectCard;
+                    cards[i] = copy;
+                    break;
+                }
+            }
+
             //4 명의 유저에게
             int giveCardIndex = 0;
-            turnId = -1; //턴 아이디 리셋 
-            List<byte[]> cardByteList = new();
             int cardDataStartIdx = 0;
             for (int userIndex = 0; userIndex < roomUser.Count; userIndex++)
             {
@@ -471,44 +490,11 @@ namespace testTcp
                     }
                 }
                 byte[] cardByte = cardList.ToArray();
-                cardByteList.Add(cardByte);
-             
-            }
+                roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
+                roomUser[userIndex].workingSocket.Send(cardByte);
 
-            //유저들 중 한명은 무조건 시작 카드를 갖고있도록
-            if(turnId == -1)
-            {
-                //플레이어중에 시작자가 없으면
-                Random ranChanger = new Random();
-                int ranIdx = ranChanger.Next(0, roomUser.Count); //바꿀애 골라서
-                for (int i = giveCardIndex; i < cards.Length; i++)
-                {
-                    CardData selectCard = cards[i];
-                    if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
-                    {
-                        //할당받은 애의 카드중에 첫번째껄 복사해놓고
-                        //2,3 하드코딩은 패킷 내용이 달라지면 바꿔줘야함. 
-                        CardData copy = new CardData(
-                            (CardClass)cardByteList[ranIdx][cardDataStartIdx],
-                            cardByteList[ranIdx][cardDataStartIdx+1]);
-                        //패킷 데이터에서 시작 카드를 넣고
-                        cardByteList[ranIdx][cardDataStartIdx] = (byte)CardData.minClass;
-                        cardByteList[ranIdx][cardDataStartIdx+1] = (byte)CardData.minRealValue;
-                        //시작 아이디 저장하고
-                        turnId = roomUser[ranIdx].ID; //서버에서 누가 시작인지 알고 있을것. 
-                        cards[i] = copy; //여기있던 카드는 카피된걸로 변경
-                        break;
-                    }
-                }
-
-             
             }
-
-            for (int i = 0; i < roomUser.Count; i++)
-            {
-                roomUser[i].HaveCard = 13; //최초 13장으로 세팅.
-                roomUser[i].workingSocket.Send(cardByteList[i]);
-            }
+      
         }
 
         private void AnnouceParty()
