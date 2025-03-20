@@ -290,6 +290,25 @@ namespace testTcp
             shuffle.Shuffle(cards);
         }
 
+        private void ShuffleTurn()
+        {
+            Random ran = new Random();
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                int ranNum = ran.Next() % roomUser.Count;
+                ClaInfo ori = roomUser[i];
+                roomUser[i] = roomUser[ranNum];
+                roomUser[ranNum] = ori;
+            }
+
+            string turn = "";
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                turn += roomUser[i].ID + " ";
+            }
+            ColorConsole.ConsoleColor("순서 " + turn);
+        }
+
         private void ReadyNexStage()
         {
             //스테이지가 끝나면 큐를 청소하고,
@@ -461,6 +480,7 @@ namespace testTcp
         {
             //섞고
             ShuffleCard();
+            ShuffleTurn();
 
             int useCardCount = roomUser.Count * 13; //나눠줄 카드 수
             for (int i = useCardCount; i < cards.Length; i++)
