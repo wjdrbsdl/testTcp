@@ -22,7 +22,7 @@ public class LobbyServer
 {
     public static IPAddress ServerIp;
     static int index = 5;
-    public static int bufferSize = 4000;
+    public static int bufferSize = 2;
     Socket mainSock;
     List<AsyncObject> connectedClientList = new List<AsyncObject>();
     int m_port = 5000;
@@ -93,17 +93,30 @@ public class LobbyServer
         try
         {
 
-            AsyncObject obj = (AsyncObject)ar.AsyncState;
-            int received = obj.WorkingSocket.EndReceive(ar);
-            byte[] buffer = new byte[received];
-            Array.Copy(obj.Buffer, 0, buffer, 0, received);
-            Console.WriteLine("요청 받음 " + (ReqLobbyType)buffer[0]);
-            //  SendChat(obj.Buffer, obj.numbering);
-            //Send(obj.Buffer);
-            HandleRoomMaker(obj, buffer);
+            AsyncObject asyObj = (AsyncObject)ar.AsyncState;
+            byte[] msgLengthBuff = asyObj.Buffer;
 
-            obj.ClearBuffer();
-            obj.WorkingSocket.BeginReceive(obj.Buffer, 0, obj.BufferSize, 0, DataReceived, obj);
+            ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+
+            byte[] recvBuffer = new byte[msgLength];
+            byte[] recvData = new byte[msgLength];
+            int recv = 0;
+            int recvIdx = 0;
+            int rest = msgLength;
+            do
+            {
+                recv = asyObj.WorkingSocket.Receive(recvBuffer);
+                Buffer.BlockCopy(recvBuffer, 0, recvData, recvIdx, recv);
+                recvIdx += recv;
+                rest -= recv;
+                recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
+            } while (rest >= 1);
+
+            Console.WriteLine("요청 받음 " + (ReqLobbyType)recvData[0]);
+      
+            HandleRoomMaker(asyObj, recvData);
+
+            asyObj.WorkingSocket.BeginReceive(asyObj.Buffer, 0, asyObj.BufferSize, 0, DataReceived, asyObj);
         }
         catch 
         {
@@ -141,7 +154,7 @@ public class LobbyServer
         else if (reqType == ReqLobbyType.ClientNumber)
         {
             byte[] response = new byte[] { (byte)ReqLobbyType.ClientNumber, (byte)_obj.numbering };
-            _obj.WorkingSocket.Send(response);
+            SendData(_obj, response);
         }
     }
 
@@ -168,7 +181,7 @@ public class LobbyServer
         {
             ColorConsole.ConsoleColor("방참가 불가 코드 발송");
             byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMake, failCode };
-            _obj.WorkingSocket.Send(joinFailCode);
+            SendData(_obj, joinFailCode);
             return;
         }
 
@@ -188,7 +201,7 @@ public class LobbyServer
         byte[] addRoomAddress = roomCode.Concat(roomAddress).ToArray();
         byte[] finalRes = addRoomAddress.Concat(roomNameByte).ToArray();
 
-        _obj.WorkingSocket.Send(finalRes);
+        SendData(_obj, finalRes);
     }
 
     private void ResChangeRoomUserCount(byte[] _reqData)
@@ -252,6 +265,29 @@ public class LobbyServer
         }
     }
     #endregion
+
+    public void SendData(AsyncObject _obj, byte[] _msg)
+    {
+        //헤더작업 용량 길이 붙여주기 
+        ushort msgLength = (ushort)_msg.Length;
+        byte[] msgLengthBuff = new byte[2];
+        msgLengthBuff = BitConverter.GetBytes(msgLength);
+
+        byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+        Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+        Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+
+        int rest = (msgLength + msgLengthBuff.Length);
+        int send = 0;
+        do
+        {
+            byte[] sendPacket = new byte[rest];
+            Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+            send = _obj.WorkingSocket.Send(sendPacket);
+            rest -= send;
+        } while (rest >= 1);
+
+    }
 
     public void Send(byte[] msg)
     {
