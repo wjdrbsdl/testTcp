@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using testTcp.Lobby;
 
 
 
@@ -21,7 +22,7 @@ public class ClientLogIn
             if (IsValidForm(ip) == true)
             {
                 Console.Clear();
-                LobbyClient client = new LobbyClient(ip, 1);
+                UniteLobClient client = new UniteLobClient(ip, 1);
                 client.Connect();
                 waitingInputIP = false;
             }

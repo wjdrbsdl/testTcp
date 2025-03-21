@@ -15,6 +15,7 @@ public class RoomData
 {
     public RoomState roomState = RoomState.Ready;
     public IPAddress roomServerIP;
+    public int portNum = 0;
     public int curCount = 0;
     public int maxCount = 4;
 
