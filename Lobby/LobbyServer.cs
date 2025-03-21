@@ -8,7 +8,7 @@ using System.Text;
 
 public enum ReqLobbyType
 {
-    RoomMake, Close, RoomState, RoomUserCount, ClientNumber
+    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber
 }
 
 public enum MeetState
@@ -111,10 +111,10 @@ public class LobbyServer
                 recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
                 if (recv == 0)
                 {
-                    //만약 남은게있으면 어떡함?
-                    break;
+                    //처음부터 0번 자료가 들어온거면 상대쪽이 연결 끊은거.
+                    AddRemoveSokect(asyObj.numbering);
+                    return;
                 }
-
             }
             while (rest>=1);
 
@@ -122,7 +122,8 @@ public class LobbyServer
       
             HandleRoomMaker(asyObj, recvData);
 
-            asyObj.WorkingSocket.BeginReceive(asyObj.Buffer, 0, asyObj.BufferSize, 0, DataReceived, asyObj);
+            if(asyObj.WorkingSocket.Connected)
+                asyObj.WorkingSocket.BeginReceive(asyObj.Buffer, 0, asyObj.BufferSize, 0, DataReceived, asyObj);
         }
         catch 
         {
