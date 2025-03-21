@@ -106,8 +106,9 @@ namespace testTcp
                     recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
                     if (recv == 0)
                     {
-                        //만약 남은게있으면 어떡함?
-                        break;
+                        ClaInfo obj = (ClaInfo)ar.AsyncState;
+                        ExitClient((byte)obj.ID);
+                        return;
                     }
                 } while (rest >= 1);
 
@@ -115,7 +116,8 @@ namespace testTcp
 
 
                 //obj.ClearBuffer();
-                cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
+                if(cla.workingSocket.Connected)
+                    cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
            
             }
             catch 
