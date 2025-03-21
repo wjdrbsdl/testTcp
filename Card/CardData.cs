@@ -13,7 +13,7 @@ public enum CardClass
 
 public class CardData : IComparable<CardData>
 {
-    public static CardClass minClass = CardClass.Spade;
+    public static CardClass minClass = CardClass.Clover;
     public static int minRealValue = 3;
     public CardClass cardClass = CardClass.Spade;
     public int num;
