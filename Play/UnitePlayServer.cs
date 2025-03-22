@@ -20,10 +20,12 @@ namespace testTcp.Play
         public int port = 5002;
         public UniteServer uniteServ;
 
-        public UnitePlayServer(int portNum, UniteServer _uniteServer)
+        public UnitePlayServer(int portNum, UniteServer _uniteServer, string _roomName)
         {
             uniteServ = _uniteServer;
             port = portNum;
+            roomName = _roomName;
+            roomUser = new();
         }
 
         //방장이 호스트가 되어 해당 방에있던 유저들의 입력을 받고 처리 
@@ -34,7 +36,7 @@ namespace testTcp.Play
             linkSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, port);
             linkSocket.Bind(endPoint);
-            linkSocket.Listen(4);
+            linkSocket.Listen(1);
             MakeCards(); //
             UpdateRemoveSockect();
             linkSocket.BeginAccept(AcceptCallBack, null);

@@ -174,8 +174,9 @@ public class UniteServer
             roomList.Add(roomName, createRoom);
             createRoom.roomServerIP = roomServerIP;
             createRoom.portNum = roomPortStart;
-            UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this);
+            UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this, roomName);
             playSever.Start();
+            
         }
         //있으면 방 데이터에서 참가 여부 가져와서 반환하고
         if (roomList[roomName].roomState == RoomState.Play)
