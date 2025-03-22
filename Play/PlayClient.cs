@@ -49,7 +49,6 @@ public class PlayClient
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
         clientSocket.BeginConnect(endPoint, CallBackConnect, clientSocket);
         EnterMessege();
-        //Update();
     }
 
     private void CallBackConnect(IAsyncResult _result)
