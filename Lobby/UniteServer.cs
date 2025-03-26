@@ -170,10 +170,8 @@ public class UniteServer
         //최초 생성이면 로비 서버 데이터에 만들고
         if (roomList.ContainsKey(roomName) == false)
         {
-            RoomData createRoom = new RoomData();
+            RoomData createRoom = new RoomData(roomServerIP, roomPortStart, roomName);
             roomList.Add(roomName, createRoom);
-            createRoom.roomServerIP = roomServerIP;
-            createRoom.portNum = roomPortStart;
             UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this, roomName);
             playSever.Start();
             
@@ -182,7 +180,7 @@ public class UniteServer
         if (roomList[roomName].roomState == RoomState.Play)
         {
             ColorConsole.ConsoleColor("방참가 불가 코드 발송");
-            byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMake, failCode };
+            byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMakeFail};
             SendData(_obj, joinFailCode);
             return;
         }
@@ -190,19 +188,13 @@ public class UniteServer
         //방 데이터 만들어놓고, 방 참가할 수 있도록 요청한 애 한테 정보 전달
         /*
          * [0] 응답 코드
-         * [1] 룸의 현재 인원 - 0이면 자신이 방장
-         * [2] 룸포트 길이 2
-         * [3] 방 이름 길이 
-         * [4] 4번부터 2번 만큼 길이를 ushort로 변환할것
-         * [4+[2]] 부터 [3] 만큼
+         * [1] 룸데이터 패킷
          */
-
-        ushort roomPort = (ushort)roomList[roomName].portNum;
-        byte[] roomPortByte = BitConverter.GetBytes(roomPort);
-        byte[] roomNameByte = Encoding.Unicode.GetBytes(roomName);
-        byte[] roomCode = new byte[] { (byte)ReqLobbyType.RoomMake, (byte)roomList[roomName].curCount, (byte)roomPortByte.Length, (byte)roomNameByte.Length };
-        byte[] addRoomAddress = roomCode.Concat(roomPortByte).ToArray();
-        byte[] finalRes = addRoomAddress.Concat(roomNameByte).ToArray();
+ 
+        byte[] roomDataPacket = roomList[roomName].GetRoomDataPacket();
+        byte[] finalRes = new byte[1 + roomDataPacket.Length];
+        finalRes[0] = (byte)ReqLobbyType.RoomMake;
+        Buffer.BlockCopy(roomDataPacket, 0, finalRes, 1, roomDataPacket.Length);
 
         SendData(_obj, finalRes);
     }
