@@ -192,6 +192,7 @@ namespace testTcp.Lobby
         {
             //현재 인원수 쪽에 패일 코드를 넣어서 불가 체크
             ColorConsole.Default("방에 참가 못했음");
+            Update(); //콘솔버전에선 채팅 기능 다시 켜기 위해서 필요
             return;
         }
 
