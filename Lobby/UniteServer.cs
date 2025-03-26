@@ -255,6 +255,10 @@ public class UniteServer
         {
             roomList[roomNameStr].curCount = roomCount;
             Console.WriteLine(roomNameStr + "방 인원 수 변경 " + roomCount.ToString());
+            if(roomCount == 0)
+            {
+                removeRoomQueue.Enqueue(roomNameStr);
+            }
         }
     }
 
@@ -360,6 +364,7 @@ public class UniteServer
 
     #region 소켓리스트에서 제거
     Queue<int> removeQueue = new Queue<int>();
+    Queue<string> removeRoomQueue = new Queue<string>();
     private void AddRemoveSokect(int _numbering)
     {
         removeQueue.Enqueue(_numbering);
@@ -385,6 +390,22 @@ public class UniteServer
                         Console.WriteLine(numbering + "소켓 제거 남은 수 " + connectedClientList.Count);
                         break;
                     }
+                }
+            }
+
+            int removeRoomCount = removeRoomQueue.Count;
+            for (int i = 0; i < removeRoomCount; i++)
+            {
+                string roomName = removeRoomQueue.Dequeue();
+                if (roomList.ContainsKey(roomName))
+                {
+                    
+                    if (roomList[roomName].curCount == 0)
+                    {
+                        //그 사이에 인원수가 들어간게 아니라면 방 제거
+                        roomList.Remove(roomName);
+                    }
+                        
                 }
             }
         }
