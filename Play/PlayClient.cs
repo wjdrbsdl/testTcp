@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using testTcp;
+using testTcp.Lobby;
 
 public class PlayerData
 {
@@ -509,7 +510,7 @@ public class PlayClient
         clientSocket.Close();
         clientSocket.Dispose();
 
-        LobbyClient client = new LobbyClient();
+        UniteLobClient client = new UniteLobClient();
         client.ReConnect();
     }
 
