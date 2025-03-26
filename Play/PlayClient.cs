@@ -42,6 +42,11 @@ public class PlayClient
         giveCardList = new();
     }
 
+    ~PlayClient()
+    {
+        Console.WriteLine("플레이 클라이언트 소멸");
+    }
+
     #region 연결 수신
     public void Connect()
     {
