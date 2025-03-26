@@ -74,7 +74,7 @@ public class PlayClient
         try
         {
             byte[] msgLengthBuff = _result.AsyncState as byte[]; //받을그릇을 2개로 받기 - 메시지 길이 정의
-            ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+            ushort msgLength = EndianChanger.NetToHost(msgLengthBuff);
 
             byte[] recvBuffer = new byte[msgLength];
             byte[] recvData = new byte[msgLength];
@@ -419,8 +419,7 @@ public class PlayClient
         //헤더작업 용량 길이 붙여주기 
         Console.WriteLine("플클에서 요청 보냄 " + (ReqRoomType)_sendData[0]);
         ushort msgLength = (ushort)_sendData.Length;
-        byte[] msgLengthBuff = new byte[2];
-        msgLengthBuff = BitConverter.GetBytes(msgLength);
+        byte[] msgLengthBuff = EndianChanger.HostToNet(msgLength);
 
         byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
         Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사

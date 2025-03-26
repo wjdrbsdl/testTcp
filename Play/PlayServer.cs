@@ -90,7 +90,7 @@ namespace testTcp
                 ClaInfo cla = (ClaInfo)ar.AsyncState;
                 byte[] msgLengthBuff = cla.buffer;
 
-                ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+                ushort msgLength = EndianChanger.NetToHost(msgLengthBuff);
 
                 byte[] recvBuffer = new byte[msgLength];
                 byte[] recvData = new byte[msgLength];
@@ -637,8 +637,8 @@ namespace testTcp
         private void SendMessege(Socket _target, byte[] _msg)
         {
             ushort msgLength = (ushort)_msg.Length;
-            byte[] msgLengthBuff = new byte[2];
-            msgLengthBuff = BitConverter.GetBytes(msgLength);
+       
+            byte[] msgLengthBuff = EndianChanger.HostToNet(msgLength);
 
             byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
             Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사

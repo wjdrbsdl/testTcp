@@ -87,7 +87,7 @@ public class UniteServer
 
             byte[] msgLengthBuff = asyObj.Buffer;
 
-            ushort msgLength = BitConverter.ToUInt16(msgLengthBuff);
+            ushort msgLength = EndianChanger.NetToHost(msgLengthBuff);
             byte[] recvBuffer = new byte[msgLength];
             byte[] recvData = new byte[msgLength];
             int recv = 0;
@@ -273,8 +273,7 @@ public class UniteServer
     {
         //헤더작업 용량 길이 붙여주기 
         ushort msgLength = (ushort)_msg.Length;
-        byte[] msgLengthBuff = new byte[2];
-        msgLengthBuff = BitConverter.GetBytes(msgLength);
+        byte[] msgLengthBuff = EndianChanger.HostToNet(msgLength);
 
         byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
         Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
