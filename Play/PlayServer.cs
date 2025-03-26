@@ -14,7 +14,7 @@ namespace testTcp
         ShuffleCard, PutDownCard,
         ArrangeTurn,
         StageReady, StageOver, GameOver,
-        ReqGameOver
+        ReqGameOver, ResRoomJoinFail
     }
 
     public class PlayServer
