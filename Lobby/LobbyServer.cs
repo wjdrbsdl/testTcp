@@ -8,7 +8,7 @@ using System.Text;
 
 public enum ReqLobbyType
 {
-    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber
+    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber, RoomMakeFail
 }
 
 public enum MeetState
