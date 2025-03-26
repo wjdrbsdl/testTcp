@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 using testTcp;
 using testTcp.Play;
 
+public enum ReqLobbyType
+{
+    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber, RoomMakeFail, RoomList
+}
 
 public class UniteServer
 {
@@ -132,7 +136,11 @@ public class UniteServer
     {
         //
         ReqLobbyType reqType = (ReqLobbyType)_reqData[0];
-        if (reqType == ReqLobbyType.RoomMake)
+        if(reqType == ReqLobbyType.RoomList)
+        {
+            ResRoomList(_obj);
+        }
+        else if (reqType == ReqLobbyType.RoomMake)
         {
             ResRoomMake(_obj, _reqData);
         }
@@ -157,6 +165,37 @@ public class UniteServer
 
     int roomPortStart = 10000;
     #region 응답 함수
+    private void ResRoomList(AsyncObject _obj)
+    {
+        //현재 만들어진 룸 리스트 정보를 패킷으로 만들어서 전달해줌
+        //모든 방 정보를 가져온다고 가정
+        /*
+         * [0] 응답코드 방 리스트
+         * [1] 방 리스트 수
+         * [2] 방 정보들 나열
+         */
+        List<byte[]> roomDatas = new List<byte[]>();
+        int length = 0;
+        foreach(KeyValuePair<string, RoomData> roomPair in roomList)
+        {
+            byte[] roomData = roomPair.Value.GetRoomDataPacket();
+            length += roomData.Length;
+            roomDatas.Add(roomData);
+
+        }
+        byte[] roomDataPacket = new byte[1 + 1 + length];
+        int offSet = 0;
+        roomDataPacket[offSet++] = (byte)ReqLobbyType.RoomList;
+        roomDataPacket[offSet++] = (byte)roomDatas.Count;
+        for (int i = 0; i < roomDatas.Count; i++)
+        {
+            byte[] roomInfo = roomDatas[i];
+            Buffer.BlockCopy(roomInfo, 0,roomDataPacket, offSet, roomInfo.Length);
+            offSet += roomInfo.Length;
+        }
+        SendData(_obj, roomDataPacket);
+    }
+
     private void ResRoomMake(AsyncObject _obj, byte[] _reqData)
     {
         string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
@@ -174,7 +213,7 @@ public class UniteServer
             roomList.Add(roomName, createRoom);
             UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this, roomName);
             playSever.Start();
-            
+            roomPortStart++;
         }
         //있으면 방 데이터에서 참가 여부 가져와서 반환하고
         if (roomList[roomName].roomState == RoomState.Play)
