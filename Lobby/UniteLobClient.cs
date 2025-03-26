@@ -192,7 +192,6 @@ namespace testTcp.Lobby
         {
             //현재 인원수 쪽에 패일 코드를 넣어서 불가 체크
             ColorConsole.Default("방에 참가 못했음");
-            Update(); //참가신청하는 순간 입력 while문이 꺼져서 다시 켜주기
             return;
         }
 
