@@ -17,7 +17,7 @@ public class RoomData
     public IPAddress roomServerIP;
     public int portNum = 0;
     public int curCount = 0;
-    public int maxCount = 4;
+    public static int maxCount = 4;
     public string roomName = "";
 
     public RoomData()
