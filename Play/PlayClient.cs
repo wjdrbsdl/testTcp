@@ -54,7 +54,7 @@ public class PlayClient
         IPAddress ipAddress = new IPAddress(ip);
         IPEndPoint endPoint = new IPEndPoint(ipAddress, port);
         clientSocket.BeginConnect(endPoint, CallBackConnect, clientSocket);
-        EnterMessege();
+      
     }
 
     private void CallBackConnect(IAsyncResult _result)
@@ -385,6 +385,10 @@ public class PlayClient
         {
             ResChat(_validData);
         }
+        else if(_reqType == ReqRoomType.ResRoomJoinFail)
+        {
+            ResRoomJoinFail();
+        }
         else if (_reqType == ReqRoomType.Start)
         {
             SetNewGame();
@@ -502,6 +506,8 @@ public class PlayClient
                 ColorConsole.Default(_data[infoIndex] + "번 참가");
             }
         }
+
+        EnterMessege();
     }
     #endregion
 
@@ -519,9 +525,15 @@ public class PlayClient
         client.ReConnect();
     }
 
-    public void ResRoomOut()
+    public void ResRoomJoinFail()
     {
+        ColorConsole.Default("플레이 클라가 방 입장 못했음");
 
+        clientSocket.Close();
+        clientSocket.Dispose();
+
+        UniteLobClient client = new UniteLobClient();
+        client.ReConnect();
     }
     #endregion
 
