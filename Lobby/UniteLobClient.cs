@@ -17,6 +17,11 @@ namespace testTcp.Lobby
         public MeetState meetState = MeetState.Lobby;
         public string RoomName = "";
 
+        public UniteLobClient()
+        {
+
+        }
+
         public UniteLobClient(string _ip, int _id, string _preRoomName = "")
         {
             ip = _ip;
@@ -54,6 +59,8 @@ namespace testTcp.Lobby
                 clientSocket.BeginReceive(buff, 0, buff.Length, 0, CallBackReceive, buff);
                 //접속했으면 접속한 넘버링 요구
                 ReqClientNumber();
+                //
+                ReqRoomList();
             }
             catch
             {
@@ -120,6 +127,10 @@ namespace testTcp.Lobby
                     ColorConsole.Default("방 접속 실패");
                     ResRoomJoinFail();
                 }
+                else if(reqType == ReqLobbyType.RoomList)
+                {
+                    ResRoomList(recvData);
+                }
 
                 if (clientSocket.Connected)
                     clientSocket.BeginReceive(msgLengthBuff, 0, msgLengthBuff.Length, 0, CallBackReceive, msgLengthBuff);
@@ -184,6 +195,44 @@ namespace testTcp.Lobby
             Update(); //참가신청하는 순간 입력 while문이 꺼져서 다시 켜주기
             return;
         }
+
+        private void ReqRoomList()
+        {
+            byte[] reqRoomList = new byte[] { (byte)ReqLobbyType.RoomList };
+            SendMessege(reqRoomList);
+        }
+
+        private void ResRoomList(byte[] _recvData)
+        {
+            /*
+             * [0]응답코드 roomList
+             * [1]방 리스트 수
+             * [2]부터 방정보
+             * 방정보  //방 데이터 만들어놓고, 방 참가할 수 있도록 요청한 애 한테 정보 전달
+                   * [0] 이 방 정보의 총 길이
+                   * [1] 룸의 현재 인원 - 0이면 자신이 방장
+                   * [2] 룸포트 길이 2
+                   * [3] 방 이름 길이 
+                   * [4] 3번부터 2번 만큼 길이를 ushort로 변환한거 - 포트번호
+                   * [4+[2]] 부터 [3] 길이 만큼이 방이름
+            */
+            int roomCount = _recvData[1];
+
+            if (roomCount == 0)
+            {
+                return;
+            }
+
+            int offSet = 2;
+            for (int i = 0; i < _recvData[1]; i++)
+            {
+                byte[] roomDataByte = new byte[_recvData[offSet]];
+                Buffer.BlockCopy(_recvData, offSet, roomDataByte, 0, _recvData[offSet]);
+                RoomData room = new RoomData(roomDataByte);
+                offSet += _recvData[offSet];
+                Console.WriteLine(room.roomName+"방 존재");
+            }
+        }
         #endregion
 
         private void ReqDisConnect()
@@ -238,9 +287,13 @@ namespace testTcp.Lobby
                 {
                     // Console.WriteLine("로클 와일문");
                     string command = Console.ReadLine();
-                    if (command == "j")
+                    string[] roomMakeCommand = command.Split("*");
+                    if (roomMakeCommand.Length < 2)
+                        continue;
+
+                    if (roomMakeCommand[0] == "j")
                     {
-                        ReqRoomJoin();
+                        ReqRoomJoin(roomMakeCommand[1]);
                         return;
                     }
 
