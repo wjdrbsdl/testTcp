@@ -19,6 +19,7 @@ namespace testTcp.Play
         public RoomState roomState = RoomState.Ready;
         public int port = 5002;
         public UniteServer uniteServ;
+        public bool isOpen = true;
 
         public UnitePlayServer(int portNum, UniteServer _uniteServer, string _roomName)
         {
@@ -28,11 +29,17 @@ namespace testTcp.Play
             roomUser = new();
         }
 
+        ~UnitePlayServer()
+        {
+            Console.WriteLine("방 서버 클래스 소멸자");
+        }
+
         //방장이 호스트가 되어 해당 방에있던 유저들의 입력을 받고 처리 
         #region 연결 및 소켓 세팅
         public void Start()
         {
             ColorConsole.ConsoleColor("룸 서버 시작");
+            isOpen = true;
             linkSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, port);
             linkSocket.Bind(endPoint);
@@ -69,6 +76,11 @@ namespace testTcp.Play
         {
             try
             {
+                if (isOpen == false)
+                {
+                    ColorConsole.ConsoleColor("룸 서버 닫힌 상태");
+                    return;
+                }
                 ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
                 ClaInfo newCla = new ClaInfo(2, client);
@@ -387,6 +399,11 @@ namespace testTcp.Play
             Task.Run(() => {
                 while (true)
                 {
+                    if(isOpen == false)
+                    {
+                        ColorConsole.Default("방 서버 테스크 종료");
+                        return;
+                    }
                     int removeCount = removeQueue.Count;
                     for (int i = 0; i < removeCount; i++)
                     {
@@ -409,6 +426,11 @@ namespace testTcp.Play
                                 {
                                     //플레이중에 누가 나갔으면 게임 오버 
                                     GameOver();
+                                }
+
+                                if (roomUser.Count == 0)
+                                {
+                                    isOpen = false;
                                 }
                                 break;
                             }
