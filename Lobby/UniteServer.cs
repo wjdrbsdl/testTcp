@@ -216,7 +216,8 @@ public class UniteServer
             roomPortStart++;
         }
         //있으면 방 데이터에서 참가 여부 가져와서 반환하고
-        if (roomList[roomName].roomState == RoomState.Play)
+        if (roomList[roomName].roomState == RoomState.Play ||
+            roomList[roomName].curCount == RoomData.maxCount)
         {
             ColorConsole.ConsoleColor("방참가 불가 코드 발송");
             byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMakeFail};
