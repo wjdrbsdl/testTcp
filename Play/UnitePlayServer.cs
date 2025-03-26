@@ -76,13 +76,22 @@ namespace testTcp.Play
         {
             try
             {
-                if (isOpen == false)
-                {
-                    ColorConsole.ConsoleColor("룸 서버 닫힌 상태");
-                    return;
-                }
+               
                 ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
+                if (isOpen == false)
+                {
+                    ColorConsole.ConsoleColor("룸 닫힘");
+                    ReqRoomJoinFail(client);
+                    return;
+                }
+                if(roomUser.Count == RoomData.maxCount)
+                {
+                    ColorConsole.ConsoleColor("룸 꽉참");
+                    ReqRoomJoinFail(client);
+                    linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
+                    return;
+                }
                 ClaInfo newCla = new ClaInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
@@ -643,6 +652,11 @@ namespace testTcp.Play
             SendMessege(overDate.ToArray());
         }
 
+        private void ReqRoomJoinFail(Socket _failClient)
+        {
+            byte[] resFail = new byte[] { (byte)ReqRoomType.ResRoomJoinFail };
+            SendMessege(_failClient, resFail);
+        }
 
         #region 패킷 전달
         private void SendMessege(byte[] _messege)
