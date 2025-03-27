@@ -766,7 +766,9 @@ namespace testTcp.Play
 
             byte[] name = Encoding.Unicode.GetBytes(roomName);
             byte[] roomCode = new byte[] { (byte)ReqLobbyType.RoomUserCount, (byte)roomUser.Count, (byte)name.Length };
-            byte[] resRoomCount = roomCode.Concat(name).ToArray();
+            byte[] resRoomCount = new byte[name.Length+roomCode.Length];
+            Buffer.BlockCopy(roomCode, 0, resRoomCount, 0, roomCode.Length);
+            Buffer.BlockCopy(name, 0, resRoomCount, roomCode.Length, name.Length);
 
             SendMessege(linkRoomCount, resRoomCount);
             linkRoomCount.Close();
