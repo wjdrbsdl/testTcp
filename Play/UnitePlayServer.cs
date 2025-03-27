@@ -95,6 +95,7 @@ namespace testTcp.Play
                 ClaInfo newCla = new ClaInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
+                AnnouceRoomName(client); //참가한애한테 방이름 알려주기.
                 SendRoomCount(); //참가에 따른 변경 인원 전달
                 linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
             }
@@ -650,6 +651,15 @@ namespace testTcp.Play
                 overDate.Add((byte)roomUser[i].BadPoint);
             }
             SendMessege(overDate.ToArray());
+        }
+
+        private void AnnouceRoomName(Socket _acceptClient)
+        {
+            byte[] nameByte = Encoding.Unicode.GetBytes(roomName);
+            byte[] namePacket = new byte[1 + nameByte.Length];
+            namePacket[0] = (byte)ReqRoomType.RoomName;
+            Buffer.BlockCopy(nameByte, 0, namePacket, 1, nameByte.Length);
+            SendMessege(_acceptClient, namePacket);
         }
 
         private void ReqRoomJoinFail(Socket _failClient)

@@ -408,9 +408,9 @@ public class PlayClient
             //idRegister에 반환되는 타입.
             ResRegisterClientIDToPartyID(_validData);
         }
-        else if (_reqType == ReqRoomType.RoomData)
+        else if (_reqType == ReqRoomType.RoomName)
         {
-            ResRoomData(_validData);
+            ResRoomName(_validData);
         }
         else if (_reqType == ReqRoomType.StageOver)
         {
@@ -493,10 +493,12 @@ public class PlayClient
         SendMessege(reqID);
     }
 
-    public void ResRoomData(byte[] _data)
+    public void ResRoomName(byte[] _data)
     {
-        RoomData room = new RoomData(_data);
-        inGameData.roomName = room.roomName;
+        byte[] nameByte = new byte[_data.Length - 1];
+        Buffer.BlockCopy(_data, 1, nameByte, 0, nameByte.Length);
+        string roomName = Encoding.Unicode.GetString(nameByte);
+        inGameData.SetRoomName(roomName);
     }
 
     public void ResRegisterClientIDToPartyID(byte[] _data)
@@ -518,7 +520,7 @@ public class PlayClient
                 inGameData.userIds[userIdx] = _data[infoIndex].ToString();
                 userIdx++;
             }
-            inGameData.userCount = userIdx;
+            inGameData.SetUserCount(userIdx);
         }
 
         EnterMessege();
