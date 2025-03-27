@@ -10,7 +10,7 @@ namespace testTcp
     public enum ReqRoomType
     {
         Ready, Start, RoomOut, Chat, 
-        IDRegister, PartyData,
+        IDRegister, PartyData, RoomData,
         ShuffleCard, PutDownCard,
         ArrangeTurn,
         StageReady, StageOver, GameOver,
