@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 public enum EMixtureType
 {
-    None, Pass, OnePair, TwoPair, Triple, Straight, Flush, FullHouse, FourCard, StraightFlush, RoyalStriaghtFlush
+    None, Pass, OneCard, OnePair, Triple, Straight, Flush, FullHouse, FourCard, StraightFlush, RoyalStriaghtFlush
 }
 
 public class CardRule
@@ -30,18 +30,18 @@ public class CardRule
         }
         if (cardCount == 1)
         {
-            mixtureValue.mixture = EMixtureType.OnePair;
+            mixtureValue.mixture = EMixtureType.OneCard;
             mixtureValue.mainRealValue = _list[0].realValue;
             mixtureValue.mainCardClass = _list[0].cardClass;
             mixtureValue.cardCount = 1;
             _mixtureValue = mixtureValue;
-            return EMixtureType.OnePair;
+            return EMixtureType.OneCard;
         }
         else if (cardCount == 2)
         {
             if (IsTwoPair(_list, out _mixtureValue))
             {
-                return EMixtureType.TwoPair;
+                return EMixtureType.OnePair;
             }
         }
         else if (cardCount == 3)
@@ -65,7 +65,7 @@ public class CardRule
         TMixture mixtureValue = new TMixture();
         if (_list[0].num == _list[1].num)
         {
-            mixtureValue.mixture = EMixtureType.TwoPair;
+            mixtureValue.mixture = EMixtureType.OnePair;
             mixtureValue.mainRealValue = _list[0].realValue;
             //두개중에 큰 무늬를 메인으로
             if (CompareCardClass(_list[0].cardClass, _list[1].cardClass) > 0)
@@ -277,7 +277,7 @@ public struct TMixture
         //여기부턴 같은거끼리의 비교
         switch (oneType)
         {
-            case EMixtureType.OnePair:
+            case EMixtureType.OneCard:
                 //가치 비교
                 compareValue = _one.mainRealValue - _two.mainRealValue;
                 if (compareValue == 0)
@@ -286,7 +286,7 @@ public struct TMixture
                     compareValue = CardRule.CompareCardClass(_one.mainCardClass, _two.mainCardClass);
                 }
                 return compareValue;
-            case EMixtureType.TwoPair:
+            case EMixtureType.OnePair:
                 //가치 비교
                 compareValue = _one.mainRealValue - _two.mainRealValue;
                 if (compareValue == 0)
