@@ -510,18 +510,17 @@ public class PlayClient
           * [2] 각 파티원 정보 길이 --일단 id만 받음
           * [3] 0번 파티원부터 정보 입력
           */
-
+        int userIdx = 0;
         for (int i = 3; i < _data.Length; i += _data[2])
         {
-            int userIdx = 0;
             for (int infoIndex = i; infoIndex < i + _data[2]; infoIndex++)
             {
                 ColorConsole.Default(_data[infoIndex] + "번 참가");
                 inGameData.userIds[userIdx] = _data[infoIndex].ToString();
                 userIdx++;
             }
-            inGameData.SetUserCount(userIdx);
         }
+        inGameData.SetUserCount(userIdx);
 
         EnterMessege();
     }
