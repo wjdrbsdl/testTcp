@@ -10,7 +10,8 @@ namespace testTcp.Play
 {
     public class UnitePlayServer
     {
-        public const int overBadPoint = 17;
+        public const int OVER_BAD_POINT = 17;
+        public const int SAFE_HAVE_COUNT = 1; //1장 보유한건 넘어감
         public List<ClaInfo> roomUser = new();
         public Socket linkSocket; //룸유저 받아들이는 소켓
         public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
@@ -236,7 +237,7 @@ namespace testTcp.Play
             for (int i = 0; i < roomUser.Count; i++)
             {
                 int restCard = roomUser[i].HaveCard;
-                if (restCard >= 1)
+                if (restCard > SAFE_HAVE_COUNT)
                 {
                     roomUser[i].BadPoint += roomUser[i].HaveCard; //남은 장수 만큼 벌점 진행
                 }
@@ -250,7 +251,7 @@ namespace testTcp.Play
             //게임 오버 체크 한유저라도 벌점 
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].BadPoint >= overBadPoint)
+                if (roomUser[i].BadPoint >= OVER_BAD_POINT)
                 {
                     return true;
                 }
@@ -625,7 +626,13 @@ namespace testTcp.Play
             for (int i = 0; i < roomUser.Count; i++)
             {
                 stageOver.Add((byte)roomUser[i].ID);
-                stageOver.Add((byte)roomUser[i].HaveCard);
+                int haveCard = roomUser[i].HaveCard; 
+                if (haveCard <= SAFE_HAVE_COUNT)
+                {
+                    //허용하는 수치의 남은 카드는 벌점으로 안 먹임. 
+                    haveCard = 0;
+                }
+                stageOver.Add((byte)haveCard);
             }
             byte[] announceData = stageOver.ToArray();
             SendMessege(announceData);
