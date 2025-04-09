@@ -22,7 +22,7 @@ public class CardRule
     {
         int cardCount = _list.Count;
         TMixture mixtureValue = new TMixture();
-        if(cardCount == 0)
+        if (cardCount == 0)
         {
             mixtureValue.mixture = EMixtureType.Pass;
             _mixtureValue = mixtureValue;
@@ -31,7 +31,7 @@ public class CardRule
         if (cardCount == 1)
         {
             mixtureValue.mixture = EMixtureType.OneCard;
-            mixtureValue.mainRealValue = _list[0].realValue;
+            mixtureValue.SetMainValue(_list[0].realValue);
             mixtureValue.mainCardClass = _list[0].cardClass;
             mixtureValue.cardCount = 1;
             _mixtureValue = mixtureValue;
@@ -66,7 +66,7 @@ public class CardRule
         if (_list[0].num == _list[1].num)
         {
             mixtureValue.mixture = EMixtureType.OnePair;
-            mixtureValue.mainRealValue = _list[0].realValue;
+            mixtureValue.SetMainValue(_list[0].realValue);
             //두개중에 큰 무늬를 메인으로
             if (CompareCardClass(_list[0].cardClass, _list[1].cardClass) > 0)
             {
@@ -91,7 +91,7 @@ public class CardRule
         {
             mixtureValue.mixture = EMixtureType.Triple;
             mixtureValue.mainCardClass = CardClass.Dia;//상관없음
-            mixtureValue.mainRealValue = _list[0].realValue;
+            mixtureValue.SetMainValue(_list[0].realValue);
             mixtureValue.cardCount = 3;
             _mixtureValue = mixtureValue;
             return true;
@@ -141,14 +141,14 @@ public class CardRule
             {
                 tmixtureValue.mixture = EMixtureType.RoyalStriaghtFlush;
                 tmixtureValue.mainCardClass = CardClass.Spade;
-                tmixtureValue.mainRealValue = 15;
+                tmixtureValue.SetMainValue(15);
                 _mixtureValue = tmixtureValue;
                 return EMixtureType.RoyalStriaghtFlush;
             }
             //그게 아니면 스티플 끼리는 무늬부터, 그리고 가장 큰 숫자 
             tmixtureValue.mixture = EMixtureType.StraightFlush;
             tmixtureValue.mainCardClass = _list[0].cardClass;
-            tmixtureValue.mainRealValue = _list[4].realValue; //
+            tmixtureValue.SetMainValue(_list[4].realValue); //
             _mixtureValue = tmixtureValue;
             return EMixtureType.StraightFlush;
         }
@@ -157,7 +157,7 @@ public class CardRule
             //가장 큰 숫자의 무늬와 실제벨류가 기준
             tmixtureValue.mixture = EMixtureType.Straight;
             tmixtureValue.mainCardClass = _list[4].cardClass;
-            tmixtureValue.mainRealValue = _list[4].realValue;
+            tmixtureValue.SetMainValue(_list[4].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.Straight;
         }
@@ -166,7 +166,7 @@ public class CardRule
             //가장 큰 숫자의 무늬와 실제벨류
             tmixtureValue.mixture = EMixtureType.Flush;
             tmixtureValue.mainCardClass = _list[4].cardClass;
-            tmixtureValue.mainRealValue = _list[4].realValue;
+            tmixtureValue.SetMainValue(_list[4].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.Flush;
         }
@@ -180,7 +180,7 @@ public class CardRule
             //같은거 3개의 숫자크기
             tmixtureValue.mixture = EMixtureType.FullHouse;
             tmixtureValue.mainCardClass = _list[0].cardClass; //상관없음
-            tmixtureValue.mainRealValue = _list[0].realValue;
+            tmixtureValue.SetMainValue(_list[0].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.FullHouse;
         }
@@ -192,7 +192,7 @@ public class CardRule
             //같은거 3개의 숫자크기
             tmixtureValue.mixture = EMixtureType.FullHouse;
             tmixtureValue.mainCardClass = _list[4].cardClass; //상관없음
-            tmixtureValue.mainRealValue = _list[4].realValue;
+            tmixtureValue.SetMainValue(_list[4].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.FullHouse;
         }
@@ -204,7 +204,7 @@ public class CardRule
         {
             tmixtureValue.mixture = EMixtureType.FourCard;
             tmixtureValue.mainCardClass = _list[0].cardClass; //상관없음
-            tmixtureValue.mainRealValue = _list[0].realValue;
+            tmixtureValue.SetMainValue(_list[0].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.FourCard;
         }
@@ -215,7 +215,7 @@ public class CardRule
         {
             tmixtureValue.mixture = EMixtureType.FourCard;
             tmixtureValue.mainCardClass = _list[4].cardClass; //상관없음
-            tmixtureValue.mainRealValue = _list[4].realValue;
+            tmixtureValue.SetMainValue(_list[4].realValue);
             _mixtureValue = tmixtureValue;
             return EMixtureType.FourCard;
         }
@@ -249,14 +249,31 @@ public struct TMixture
     public EMixtureType mixture; //조합
     public CardClass mainCardClass; //기준 무늬
     public int mainRealValue; //기준 가치
+    public int mainShowValue; //겉보기 가치
     public int cardCount; //사용에 쓰인 카드 수 
 
-    public TMixture()
+    public string GetCardRealValue()
     {
-        mixture = EMixtureType.None;
-        mainCardClass = CardClass.Spade;
-        mainRealValue = 0;
-        cardCount = 0;
+        return mixture + "_" + mainCardClass + "_" + mainRealValue.ToString();
+    }
+
+    public string GetCardShowValue()
+    {
+        return mixture + "_" + mainCardClass + "_" + mainShowValue.ToString();
+    }
+
+    public void SetMainValue(int _realValue)
+    {
+        mainRealValue = _realValue;
+        mainShowValue = mainRealValue;
+        if (mainRealValue == 14)
+        {
+            mainShowValue = 1;
+        }
+        else if (mainRealValue == 15)
+        {
+            mainShowValue = 2;
+        }
     }
 
     public static int Compare(TMixture _one, TMixture _two)
