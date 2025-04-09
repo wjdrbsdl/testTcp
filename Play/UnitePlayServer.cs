@@ -673,33 +673,47 @@ namespace testTcp.Play
         {
             for (int i = 0; i < roomUser.Count; i++)
             {
+                if (roomUser[i].workingSocket.Connected)
                 SendMessege(roomUser[i].workingSocket, _messege);
             }
         }
 
         private void SendMessege(byte[] _msg, int _target)
         {
-            SendMessege(roomUser[_target].workingSocket, _msg);
+            if (roomUser[_target].workingSocket.Connected)
+                SendMessege(roomUser[_target].workingSocket, _msg);
         }
 
         private void SendMessege(Socket _target, byte[] _msg)
         {
-            ushort msgLength = (ushort)_msg.Length;
-            byte[] msgLengthBuff = EndianChanger.HostToNet(msgLength);
-
-            byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
-            Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
-            Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
-
-            int rest = (msgLength + msgLengthBuff.Length);
-            int send = 0;
-            do
+            try
             {
-                byte[] sendPacket = new byte[rest];
-                Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
-                send = _target.Send(sendPacket);
-                rest -= send;
-            } while (rest >= 1);
+                ushort msgLength = (ushort)_msg.Length;
+                byte[] msgLengthBuff = EndianChanger.HostToNet(msgLength);
+
+                byte[] originPacket = new byte[msgLengthBuff.Length + msgLength];
+                Buffer.BlockCopy(msgLengthBuff, 0, originPacket, 0, msgLengthBuff.Length); //패킷 0부터 메시지 길이 버퍼 만큼 복사
+                Buffer.BlockCopy(_msg, 0, originPacket, msgLengthBuff.Length, msgLength); //패킷 메시지길이 버퍼 길이 부터, 메시지 복사
+
+                int rest = (msgLength + msgLengthBuff.Length);
+                int send = 0;
+                do
+                {
+                    byte[] sendPacket = new byte[rest];
+                    Buffer.BlockCopy(originPacket, originPacket.Length - rest, sendPacket, 0, rest);
+                    if (_target.Connected)
+                    {
+                        send = _target.Send(sendPacket);
+                    }
+                
+                    rest -= send;
+                } while (rest >= 1);
+            }
+            catch
+            {
+                _target.Close();
+            }
+      
         }
         #endregion
 
