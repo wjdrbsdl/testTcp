@@ -10,6 +10,7 @@ namespace testTcp.Play
 {
     public class UnitePlayServer
     {
+        public const int overBadPoint = 17;
         public List<ClaInfo> roomUser = new();
         public Socket linkSocket; //룸유저 받아들이는 소켓
         public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
@@ -243,7 +244,7 @@ namespace testTcp.Play
             }
         }
 
-        int overBadPoint = 13; //
+         //
         private bool CheckGameOver()
         {
             //게임 오버 체크 한유저라도 벌점 
