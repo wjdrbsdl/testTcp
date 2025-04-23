@@ -11,7 +11,7 @@ namespace testTcp
     {
         Ready, Start, RoomOut, Chat, 
         IDRegister, PartyData, RoomName,
-        ShuffleCard, PutDownCard,
+        ShuffleCard, PutDownCard, SelectCard,
         ArrangeTurn,
         StageReady, StageOver, GameOver,
         ReqGameOver, ResRoomJoinFail,
@@ -168,6 +168,11 @@ namespace testTcp
                 ShuffleTurn();
                 AnnouceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
+            }
+            else if (reqType == ReqRoomType.SelectCard)
+            {
+                //1. 다른유저들에게 선택된 카드 공지
+                AnnouceSelectCardList(_reqData); //그럼 끝 클라에서 받아서 처리
             }
             else if(reqType == ReqRoomType.PutDownCard)
             {
@@ -548,6 +553,30 @@ namespace testTcp
             ColorConsole.ConsoleColor("턴 지정 " + turnId.ToString());
             byte[] turnData = new byte[] { (byte)ReqRoomType.ArrangeTurn, (byte)turnId };
             SendMessege(turnData);
+        }
+
+        private void AnnouceSelectCardList(byte[] _selectCardData)
+        {
+            /*
+             * [0] 요청 코드 putdownCard
+             * [1] 플레이어 id
+             * [2] 낸 카드 숫자
+             * [3] 카드 구성
+           */
+            ColorConsole.ConsoleColor("어떤 카드 내는 중인지 표기하기");
+            //전체 데이터에서 해당 유저가 가진 카드를 빼도 되고
+            //다음 차례 역할 지정하기 
+            //해당 유저가 보유한 카드에서 감소
+           
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID == _selectCardData[1])
+                {
+                    continue;
+                }
+                //낸사람 말고 정보 전달 
+                SendMessege(_selectCardData, i);
+            }
         }
 
         private void AnnoucePutDownCard(byte[] _putDownCardData)
