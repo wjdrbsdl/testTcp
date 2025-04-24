@@ -383,7 +383,7 @@ namespace testTcp
                 ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
                 //섞고
                 ShuffleCard();
-                ShuffleUserOrder();
+                //ShuffleUserOrder(); //스테이지 시작시엔 차례 섞기 안함
                 AnnouceCardArrange();
                 AnnounceTurnPlayer();
             });
