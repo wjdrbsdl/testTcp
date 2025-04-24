@@ -6,13 +6,26 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace testTcp.Play
+namespace testTcp
 {
+    public enum ReqRoomType
+    {
+        Ready, Start, RoomOut, Chat,
+        IDRegister, PartyData, RoomName,
+        ShuffleCard, PutDownCard, SelectCard,
+        ArrangeTurn,
+        StageReady, StageOver, GameOver,
+        ReqGameOver, ResRoomJoinFail,
+        Draw, UserOrder
+
+    }
+
     public class UnitePlayServer
     {
         public const int OVER_BAD_POINT = 17;
         public const int SAFE_HAVE_COUNT = 1; //1장 보유한건 넘어감
         public List<ClaInfo> roomUser = new();
+        private List<string> gameplayOrder = new(); //게임 시작했을 때 진행 순서
         public Socket linkSocket; //룸유저 받아들이는 소켓
         public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
         public Socket linkRoomCount; //서버로비와 소통하는 소켓 -> 방 인원 바뀔때 신호 
@@ -189,7 +202,8 @@ namespace testTcp.Play
                 UserScoreReset(); //유저 점수 리셋
                 //섞고
                 ShuffleCard();
-                ShuffleTurn();
+                ShuffleUserOrder();
+                AnnouceUserOrder(); //섞은 차례 알려주고 
                 AnnouceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
             }
@@ -318,7 +332,7 @@ namespace testTcp.Play
             shuffle.Shuffle(cards);
         }
 
-        private void ShuffleTurn()
+        private void ShuffleUserOrder()
         {
             Random ran = new Random();
             for (int i = 0; i < roomUser.Count; i++)
@@ -369,7 +383,7 @@ namespace testTcp.Play
                 ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
                 //섞고
                 ShuffleCard();
-                ShuffleTurn();
+                ShuffleUserOrder();
                 AnnouceCardArrange();
                 AnnounceTurnPlayer();
             });
@@ -499,6 +513,33 @@ namespace testTcp.Play
         {
             ColorConsole.ConsoleColor($"{_exitID}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
             AddRemoveSokect(_exitID);
+        }
+
+        private void AnnouceUserOrder()
+        {
+            //플레이어 차례 알려주기
+            List<byte> userOrderList = new List<byte>();
+            /*
+             * [0] 코드 - ReqRoomType.UserOrder
+             * [1] 참가 인원수
+             * [2]부터 해당아이디 Length, 아이디값 반복.
+             * [2+ Length+1] ~ 반복
+             */
+            userOrderList.Add((byte)ReqRoomType.UserOrder); //코드 
+            userOrderList.Add((byte)roomUser.Count); //
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                string id = roomUser[i].ID.ToString();
+
+                byte[] idBytes = Encoding.Unicode.GetBytes(id);
+                byte idLength = (byte)idBytes.Length;
+                userOrderList.Add(idLength);
+                for (int j = 0; j < idBytes.Length; j++)
+                {
+                    userOrderList.Add(idBytes[j]);
+                }
+            }
+            SendMessege(userOrderList.ToArray());
         }
 
         private void AnnouceCardArrange()
