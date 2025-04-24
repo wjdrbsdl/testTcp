@@ -7,17 +7,7 @@ using System.Threading.Tasks;
 
 namespace testTcp
 {
-    public enum ReqRoomType
-    {
-        Ready, Start, RoomOut, Chat, 
-        IDRegister, PartyData, RoomName,
-        ShuffleCard, PutDownCard, SelectCard,
-        ArrangeTurn,
-        StageReady, StageOver, GameOver,
-        ReqGameOver, ResRoomJoinFail,
-        Draw
-            
-    }
+ 
 
     public class PlayServer
     {
