@@ -195,8 +195,9 @@ namespace testTcp
             else if (reqType == ReqRoomType.PutDownCard)
             {
                 //0. 유효한 카드인지 체크
-                if(CheckValidPutDown(_reqData) == false)
+                if(CheckValidPutDown(_reqData, out int userId) == false)
                 {
+                    AnnounceValidCardDate(userId);
                     return;
                 }
                 //1. 다른유저들에게도 제출된 카드 공지
@@ -660,7 +661,7 @@ namespace testTcp
             }
         }
 
-        private bool CheckValidPutDown(byte[] _putDownCardData)
+        private bool CheckValidPutDown(byte[] _putDownCardData, out int _userId)
         {
             /*
              * [0] 요청 코드 putdownCard
@@ -668,7 +669,9 @@ namespace testTcp
              * [2] 낸 카드 숫자
              * [3] 카드 구성
            */
+            
             int id = _putDownCardData[1];
+            _userId = id;
             int cardCount = _putDownCardData[2];
             for (int i = 3; i < 3+cardCount; i+=2)
             {
@@ -682,6 +685,47 @@ namespace testTcp
                 }
             }
             return true;
+        }
+
+        private void AnnounceValidCardDate(int _userId)
+        {
+            //해당 아이디의 유저에게 본인이 가진 카드 정보 다시 전달해주기 -- 치트 써서 무효한거 보냈을때 대응
+            /*
+           * [0] 요청 코드 inValidCard
+           * [1] 플레이어 id
+           * [2] 카드 구성 
+         */
+            // (byte)카드클래스, (byte)num 순으로 해당 리스트에 추가
+            List<byte> cardList = new();
+            cardList.Add((byte)ReqRoomType.InValidCard);//요청 코드
+            cardList.Add((byte)_userId);
+            int haveCardCount = 0;
+            for (int i = 0; i < cardHave.Length; i++)
+            {
+                if (cardHave[i] == _userId)
+                {
+                    haveCardCount += 1;
+                    cardList.Add((byte)(i / 13)); //카드 클래스
+                    cardList.Add((byte)((i % 13) + 1));//카드 넘버
+                }
+            }
+            byte[] cardByte = cardList.ToArray();
+            int userIndex = -1;
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].ID == _userId)
+                {
+                    userIndex = i;
+                    break;
+                }
+            }
+            if(userIndex == -1)
+            {
+                //없는 유저 인덱스만 반송도 안함. 그냥 시간초과시키기
+                return; 
+            }
+           // roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
+            SendMessege(cardByte, userIndex);
         }
 
         private void AnnoucePutDownCard(byte[] _putDownCardData)
