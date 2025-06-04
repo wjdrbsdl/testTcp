@@ -16,12 +16,15 @@ namespace testTcp
         ArrangeTurn,
         StageReady, StageOver, GameOver,
         ReqGameOver, ResRoomJoinFail,
-        Draw, UserOrder
+        Draw, UserOrder,
+        InValidCard
 
     }
 
     public class UnitePlayServer
     {
+        private const int INVALID_NUM = -1;
+        private int[] cardHave = new int[52]; //카드장수
         public const int OVER_BAD_POINT = 17;
         public const int SAFE_HAVE_COUNT = 1; //1장 보유한건 넘어감
         public List<ClaInfo> roomUser = new();
@@ -560,6 +563,11 @@ namespace testTcp
                 }
             }
 
+            for (int i = 0; i < cardHave.Length; i++)
+            {
+                cardHave[i] = INVALID_NUM; //가진사람 없다는 의미로 -1 
+            }
+
             //4 명의 유저에게
             int giveCardIndex = 0;
             int cardDataStartIdx = 0;
@@ -575,17 +583,19 @@ namespace testTcp
                  * [1] 카드 숫자
                  */
                 //13장씩
-
+                int userId = roomUser[userIndex].ID; //카드 받을 유저
                 for (int cardCount = 1; cardCount <= 13; cardCount++)
                 {
                     CardData selectCard = cards[giveCardIndex];
+                    cardHave[ConvertCardDataToCardIndex(selectCard)] = userId; //해당 카드는 id가 가진걸로 체크
+                   // ColorConsole.ConsoleColor($"{selectCard.cardClass}:{selectCard.num}번 카드 {userId}가 가짐");
                     giveCardIndex++;
 
                     cardList.Add((byte)selectCard.cardClass);
                     cardList.Add((byte)selectCard.num);
                     if (selectCard.Compare(CardData.minClass, CardData.minRealValue) == 0)
                     {
-                        turnId = roomUser[userIndex].ID; //서버에서 누가 시작인지 알고 있을것. 
+                        turnId = userId; //서버에서 누가 시작인지 알고 있을것. 
                     }
                 }
                 byte[] cardByte = cardList.ToArray();
@@ -593,6 +603,13 @@ namespace testTcp
                 SendMessege(cardByte, userIndex);
             }
 
+        }
+
+        private int ConvertCardDataToCardIndex(CardData _cardData)
+        {
+            //카드 값을 가지고 [0,51] 인덱스로 변환하기
+            int startValue = (int)_cardData.cardClass * 13; //스다하클로 0, 13, 26, 39 부터 시작
+            return startValue + _cardData.num-1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
         }
 
         private void AnnouceParty()
