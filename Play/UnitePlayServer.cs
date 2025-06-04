@@ -217,6 +217,11 @@ namespace testTcp
             }
             else if (reqType == ReqRoomType.PutDownCard)
             {
+                //0. 유효한 카드인지 체크
+                if(CheckValidPutDown(_reqData) == false)
+                {
+                    return;
+                }
                 //1. 다른유저들에게도 제출된 카드 공지
                 AnnoucePutDownCard(_reqData);
                 //2. 해당 유저가 모든 패를 털었는지 체크
@@ -612,6 +617,13 @@ namespace testTcp
             return startValue + _cardData.num-1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
         }
 
+        private int ConvertCardDataToCardIndex(int _cardClass, int _cardNum)
+        {
+            //카드 값을 가지고 [0,51] 인덱스로 변환하기
+            int startValue = _cardClass * 13; //스다하클로 0, 13, 26, 39 부터 시작
+            return startValue +  _cardNum - 1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
+        }
+
         private void AnnouceParty()
         {
             ColorConsole.ConsoleColor("유저 방 참가를 알려줌");
@@ -669,6 +681,30 @@ namespace testTcp
                 //낸사람 말고 정보 전달 
                 SendMessege(_selectCardData, i);
             }
+        }
+
+        private bool CheckValidPutDown(byte[] _putDownCardData)
+        {
+            /*
+             * [0] 요청 코드 putdownCard
+             * [1] 플레이어 id
+             * [2] 낸 카드 숫자
+             * [3] 카드 구성
+           */
+            int id = _putDownCardData[1];
+            int cardCount = _putDownCardData[2];
+            for (int i = 3; i < 3+cardCount; i+=2)
+            {
+                int cardClass = _putDownCardData[i];
+                int cardNum = _putDownCardData[i + 1];
+                int cardIndex = ConvertCardDataToCardIndex(cardClass, cardNum);
+                if (cardHave[cardIndex] != id)
+                {
+                    ColorConsole.ConsoleColor("카드 뻥카 쳤다");
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void AnnoucePutDownCard(byte[] _putDownCardData)
