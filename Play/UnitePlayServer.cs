@@ -27,7 +27,7 @@ namespace testTcp
         private int[] cardHave = new int[52]; //카드장수
         public const int OVER_BAD_POINT = 17;
         public const int SAFE_HAVE_COUNT = 1; //1장 보유한건 넘어감
-        public List<ClaInfo> roomUser = new();
+        public List<ClientInfo> roomUser = new();
         private List<string> gameplayOrder = new(); //게임 시작했을 때 진행 순서
         public Socket linkSocket; //룸유저 받아들이는 소켓
         public Socket linkStateLobby; //서버로비와 소통하는 소켓 -> 방 상태 바뀔때 신호 
@@ -67,29 +67,6 @@ namespace testTcp
             linkSocket.BeginAccept(AcceptCallBack, null);
         }
 
-        public class ClaInfo
-        {
-            public byte[] buffer;
-            public Socket workingSocket;
-            public int ID = 0; //0이면 아이디를 전달받지 못한 상태
-            public int HaveCard = 0;
-            public int BadPoint = 0;
-
-            public ClaInfo(int _bufferSize, Socket _claSocket)
-            {
-                buffer = new byte[_bufferSize];
-                workingSocket = _claSocket;
-
-            }
-
-            public void ResetScore()
-            {
-                HaveCard = 0;
-                BadPoint = 0;
-            }
-
-        }
-
         private void AcceptCallBack(IAsyncResult _result)
         {
             try
@@ -110,7 +87,7 @@ namespace testTcp
                     linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
                     return;
                 }
-                ClaInfo newCla = new ClaInfo(2, client);
+                ClientInfo newCla = new ClientInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
                 AnnouceRoomName(client); //참가한애한테 방이름 알려주기.
@@ -129,7 +106,7 @@ namespace testTcp
             try
             {
                 // ColorConsole.ConsoleColor("룸     서버로서 리시브");
-                ClaInfo cla = (ClaInfo)ar.AsyncState;
+                ClientInfo cla = (ClientInfo)ar.AsyncState;
                 byte[] msgLengthBuff = cla.buffer;
 
                 ushort msgLength = EndianChanger.NetToHost(msgLengthBuff);
@@ -148,7 +125,7 @@ namespace testTcp
                     recvBuffer = new byte[rest];//퍼올 버퍼 크기 수정
                     if (recv == 0)
                     {
-                        ClaInfo obj = (ClaInfo)ar.AsyncState;
+                        ClientInfo obj = (ClientInfo)ar.AsyncState;
                         ExitClient((byte)obj.ID);
                         return;
                     }
@@ -165,14 +142,14 @@ namespace testTcp
             catch
             {
 
-                ClaInfo obj = (ClaInfo)ar.AsyncState;
+                ClientInfo obj = (ClientInfo)ar.AsyncState;
                 ExitClient((byte)obj.ID);
             }
 
         }
         #endregion
 
-        private void HandleReq(ClaInfo _claInfo, byte[] _reqData)
+        private void HandleReq(ClientInfo _claInfo, byte[] _reqData)
         {
             ReqRoomType reqType = (ReqRoomType)_reqData[0];
 
@@ -346,7 +323,7 @@ namespace testTcp
             for (int i = 0; i < roomUser.Count; i++)
             {
                 int ranNum = ran.Next() % roomUser.Count;
-                ClaInfo ori = roomUser[i];
+                ClientInfo ori = roomUser[i];
                 roomUser[i] = roomUser[ranNum];
                 roomUser[ranNum] = ori;
             }
