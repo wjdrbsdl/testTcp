@@ -678,6 +678,11 @@ namespace testTcp
                 int cardClass = _putDownCardData[i];
                 int cardNum = _putDownCardData[i + 1];
                 int cardIndex = ConvertCardDataToCardIndex(cardClass, cardNum);
+                if(cardIndex<0 || cardIndex <= 52)
+                {
+                    ColorConsole.ConsoleColor("범위 밖 카드 뻥카 쳤다");
+                    return false;
+                }
                 if (cardHave[cardIndex] != id)
                 {
                     ColorConsole.ConsoleColor("카드 뻥카 쳤다");
