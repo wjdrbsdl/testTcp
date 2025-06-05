@@ -713,12 +713,14 @@ namespace testTcp
             /*
            * [0] 요청 코드 inValidCard
            * [1] 플레이어 id
-           * [2] 카드 구성 
+           * [2] 현재턴 Id
+           * [3] 카드 구성 시작
          */
             // (byte)카드클래스, (byte)num 순으로 해당 리스트에 추가
             List<byte> cardList = new();
             cardList.Add((byte)ReqRoomType.InValidCard);//요청 코드
             cardList.Add((byte)_userId);
+            cardList.Add((byte)turnId); //차례인 사람
             int haveCardCount = 0;
             for (int i = 0; i < cardHave.Length; i++)
             {
