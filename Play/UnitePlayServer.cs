@@ -200,6 +200,9 @@ namespace testTcp
                     AnnounceValidCardDate(userId);
                     return;
                 }
+                //0-1. 유효했으면 해당 카드 제출된걸로 -1로 변환
+                ChangeCardBelongings(_reqData);
+
                 //1. 다른유저들에게도 제출된 카드 공지
                 AnnoucePutDownCard(_reqData);
                 //2. 해당 유저가 모든 패를 털었는지 체크
@@ -690,6 +693,18 @@ namespace testTcp
                 }
             }
             return true;
+        }
+
+        private void ChangeCardBelongings(byte[] _putDownCardData)
+        {
+            int cardCount = _putDownCardData[2];
+            for (int i = 3; i < 3 + cardCount; i += 2)
+            {
+                int cardClass = _putDownCardData[i];
+                int cardNum = _putDownCardData[i + 1];
+                int cardIndex = ConvertCardDataToCardIndex(cardClass, cardNum);
+                cardHave[cardIndex] = INVALID_NUM;
+            }
         }
 
         private void AnnounceValidCardDate(int _userId)
