@@ -192,6 +192,17 @@ namespace testTcp
                 //게임 시작 가능한 상태인지 체크 
                 //방장의 시작인가, 인원이 다 찼는가
                 //게임 시작 가능하면 아래 진행
+                //시작 데이터
+                /*
+                 * [0] 요구코드 start
+                 * [1] 요구한 pid
+                 */
+                bool allReady = IsAllReady(_reqData[1]);
+                if(allReady == false)
+                {
+                    return;
+                    Console.WriteLine("준비 아닌 유저있어서 진행 불가");
+                }
 
                 RoomState = RoomState.Play;
                 SendRoomStateToLobbyServer();
