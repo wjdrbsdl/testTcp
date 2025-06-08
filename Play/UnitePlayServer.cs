@@ -93,8 +93,6 @@ namespace testTcp
                 ClientInfo newCla = new ClientInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
-                ArrangeRoomMaster(); //방장 뽑고
-                AnnouceRoomMaster(); //방장이 누구인지 전달하고
                 AnnouceRoomName(client); //참가한애한테 방이름 알려주기.
                 SendRoomCount(); //참가에 따른 변경 인원 전달
 
@@ -163,6 +161,7 @@ namespace testTcp
             if (reqType == ReqRoomType.IDRegister)
             {
                 _claInfo.ID = _reqData[1];
+                AnnouceRoomMaster();
                 AnnouceParty();
             }
             else if (reqType == ReqRoomType.Chat)
@@ -446,6 +445,7 @@ namespace testTcp
                                 roomUser.RemoveAt(x);
 
                                 Console.WriteLine(numbering + "소켓 제거 유저 남은 수 " + roomUser.Count);
+                                AnnouceRoomMaster();
                                 AnnouceParty();
                                 SendRoomCount(); //유저 나감에 따른 수치 변경
 
@@ -837,11 +837,6 @@ namespace testTcp
 
         private void ArrangeRoomMaster()
         {
-            if (roomMasterId != INVALID_NUM)
-            {
-                return;
-            }
-
             if (roomUser.Count == 0)
             {
                 return;
@@ -856,6 +851,8 @@ namespace testTcp
              * [0] 응답 코드 룸마스터
             * [1] 마스터 아이디 
             */
+
+            ArrangeRoomMaster();
 
             byte[] roomMasterData = new byte[2];
             roomMasterData[0] = (byte)ReqRoomType.ArrangeRoomMaster;
