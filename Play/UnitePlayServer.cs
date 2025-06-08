@@ -573,6 +573,26 @@ namespace testTcp
         private void AnnounceReadyState()
         {
             //플레이어 준비 상태 전달하기
+            /*
+             * [0] 코드
+             * [pid]
+             * [state = 0이면 false]
+             */
+            List<byte> readyDate = new();
+            readyDate.Add((byte)ReqRoomType.Ready);
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                readyDate.Add((byte)roomUser[i].PID);
+                if (roomUser[i].IsReady)
+                {
+                    readyDate.Add(1);
+                }
+                else
+                {
+                    readyDate.Add(0);
+                }
+            }
+            SendMessege(readyDate.ToArray());
         }
 
         private void AnnounceUserOrder()
