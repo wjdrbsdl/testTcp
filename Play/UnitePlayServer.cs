@@ -17,7 +17,7 @@ namespace testTcp
         StageReady, StageOver, GameOver,
         ReqGameOver, ResRoomJoinFail,
         Draw, UserOrder,
-        InValidCard
+        InValidCard, ArrangeRoomMaster
 
     }
 
@@ -34,6 +34,7 @@ namespace testTcp
         public Socket linkRoomCount; //서버로비와 소통하는 소켓 -> 방 인원 바뀔때 신호 
         public string roomName;
         public int turnId;
+        public int roomMasterId = INVALID_NUM;
         public RoomState roomState = RoomState.Ready;
         public int port = 5002;
         public UniteServer uniteServ;
@@ -71,8 +72,8 @@ namespace testTcp
         {
             try
             {
-               
-                ColorConsole.ConsoleColor("룸 서버 수락");
+                //룸에 클라이언트 입장을 받았을때 방에 참가가능한지 판단
+                // ColorConsole.ConsoleColor("룸 서버 수락");
                 Socket client = linkSocket.EndAccept(_result);
                 if (isOpen == false)
                 {
@@ -80,18 +81,24 @@ namespace testTcp
                     ReqRoomJoinFail(client);
                     return;
                 }
-                if(roomUser.Count == RoomData.maxCount)
+                if (roomUser.Count == RoomData.maxCount)
                 {
                     ColorConsole.ConsoleColor("룸 꽉참");
                     ReqRoomJoinFail(client);
                     linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
                     return;
                 }
+
+                //참가가능하면 클라이언트로 받아들임
                 ClientInfo newCla = new ClientInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
+                ArrangeRoomMaster(); //방장 뽑고
+                AnnouceRoomMaster(); //방장이 누구인지 전달하고
                 AnnouceRoomName(client); //참가한애한테 방이름 알려주기.
                 SendRoomCount(); //참가에 따른 변경 인원 전달
+
+
                 linkSocket.BeginAccept(AcceptCallBack, null); //다른거 받을 준비 
             }
             catch
@@ -195,7 +202,7 @@ namespace testTcp
             else if (reqType == ReqRoomType.PutDownCard)
             {
                 //0. 유효한 카드인지 체크
-                if(CheckValidPutDown(_reqData, out int userId) == false)
+                if (CheckValidPutDown(_reqData, out int userId) == false)
                 {
                     AnnounceValidCardDate(userId);
                     return;
@@ -253,7 +260,7 @@ namespace testTcp
             }
         }
 
-         //
+        //
         private bool CheckGameOver()
         {
             //게임 오버 체크 한유저라도 벌점 
@@ -416,10 +423,11 @@ namespace testTcp
 
         private void UpdateRemoveSockect()
         {
-            Task.Run(() => {
+            Task.Run(() =>
+            {
                 while (true)
                 {
-                    if(isOpen == false)
+                    if (isOpen == false)
                     {
                         ColorConsole.Default("방 서버 테스크 종료");
                         return;
@@ -574,7 +582,7 @@ namespace testTcp
                 {
                     CardData selectCard = cards[giveCardIndex];
                     cardHave[ConvertCardDataToCardIndex(selectCard)] = userId; //해당 카드는 id가 가진걸로 체크
-                   // ColorConsole.ConsoleColor($"{selectCard.cardClass}:{selectCard.num}번 카드 {userId}가 가짐");
+                                                                               // ColorConsole.ConsoleColor($"{selectCard.cardClass}:{selectCard.num}번 카드 {userId}가 가짐");
                     giveCardIndex++;
 
                     cardList.Add((byte)selectCard.cardClass);
@@ -595,14 +603,14 @@ namespace testTcp
         {
             //카드 값을 가지고 [0,51] 인덱스로 변환하기
             int startValue = (int)_cardData.cardClass * 13; //스다하클로 0, 13, 26, 39 부터 시작
-            return startValue + _cardData.num-1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
+            return startValue + _cardData.num - 1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
         }
 
         private int ConvertCardDataToCardIndex(int _cardClass, int _cardNum)
         {
             //카드 값을 가지고 [0,51] 인덱스로 변환하기
             int startValue = _cardClass * 13; //스다하클로 0, 13, 26, 39 부터 시작
-            return startValue +  _cardNum - 1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
+            return startValue + _cardNum - 1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
         }
 
         private void AnnouceParty()
@@ -672,16 +680,16 @@ namespace testTcp
              * [2] 낸 카드 숫자
              * [3] 카드 구성
            */
-            
+
             int id = _putDownCardData[1];
             _userId = id;
             int cardCount = _putDownCardData[2];
-            for (int i = 3; i < 3+cardCount; i+=2)
+            for (int i = 3; i < 3 + cardCount; i += 2)
             {
                 int cardClass = _putDownCardData[i];
                 int cardNum = _putDownCardData[i + 1];
                 int cardIndex = ConvertCardDataToCardIndex(cardClass, cardNum);
-                if(cardIndex<0 || 52 <= cardIndex)
+                if (cardIndex < 0 || 52 <= cardIndex)
                 {
                     ColorConsole.ConsoleColor("범위 밖 카드 뻥카 쳤다");
                     return false;
@@ -741,12 +749,12 @@ namespace testTcp
                     break;
                 }
             }
-            if(userIndex == -1)
+            if (userIndex == -1)
             {
                 //없는 유저 인덱스만 반송도 안함. 그냥 시간초과시키기
-                return; 
+                return;
             }
-           // roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
+            // roomUser[userIndex].HaveCard = 13; //최초 13장으로 세팅.
             SendMessege(cardByte, userIndex);
         }
 
@@ -792,7 +800,7 @@ namespace testTcp
             for (int i = 0; i < roomUser.Count; i++)
             {
                 stageOver.Add((byte)roomUser[i].ID);
-                int haveCard = roomUser[i].HaveCard; 
+                int haveCard = roomUser[i].HaveCard;
                 if (haveCard <= SAFE_HAVE_COUNT)
                 {
                     //허용하는 수치의 남은 카드는 벌점으로 안 먹임. 
@@ -827,6 +835,35 @@ namespace testTcp
             SendMessege(overDate.ToArray());
         }
 
+        private void ArrangeRoomMaster()
+        {
+            if (roomMasterId != INVALID_NUM)
+            {
+                return;
+            }
+
+            if (roomUser.Count == 0)
+            {
+                return;
+            }
+
+            roomMasterId = roomUser[0].ID;
+        }
+
+        private void AnnouceRoomMaster()
+        {
+            /*
+             * [0] 응답 코드 룸마스터
+            * [1] 마스터 아이디 
+            */
+
+            byte[] roomMasterData = new byte[2];
+            roomMasterData[0] = (byte)ReqRoomType.ArrangeRoomMaster;
+            roomMasterData[1] = (byte)roomMasterId;
+
+            SendMessege(roomMasterData);
+        }
+
         private void AnnouceRoomName(Socket _acceptClient)
         {
             byte[] nameByte = Encoding.Unicode.GetBytes(roomName);
@@ -848,7 +885,7 @@ namespace testTcp
             for (int i = 0; i < roomUser.Count; i++)
             {
                 if (roomUser[i].workingSocket.Connected)
-                SendMessege(roomUser[i].workingSocket, _messege);
+                    SendMessege(roomUser[i].workingSocket, _messege);
             }
         }
 
@@ -879,7 +916,7 @@ namespace testTcp
                     {
                         send = _target.Send(sendPacket);
                     }
-                
+
                     rest -= send;
                 } while (rest >= 1);
             }
@@ -887,7 +924,7 @@ namespace testTcp
             {
                 _target.Close();
             }
-      
+
         }
         #endregion
 
@@ -966,7 +1003,7 @@ namespace testTcp
 
             byte[] name = Encoding.Unicode.GetBytes(roomName);
             byte[] roomCode = new byte[] { (byte)ReqLobbyType.RoomUserCount, (byte)roomUser.Count, (byte)name.Length };
-            byte[] resRoomCount = new byte[name.Length+roomCode.Length];
+            byte[] resRoomCount = new byte[name.Length + roomCode.Length];
             Buffer.BlockCopy(roomCode, 0, resRoomCount, 0, roomCode.Length);
             Buffer.BlockCopy(name, 0, resRoomCount, roomCode.Length, name.Length);
 
