@@ -93,7 +93,7 @@ namespace testTcp
                 ClientInfo newCla = new ClientInfo(2, client);
                 roomUser.Add(newCla);
                 client.BeginReceive(newCla.buffer, 0, newCla.buffer.Length, 0, DataReceived, newCla);
-                AnnouceRoomName(client); //참가한애한테 방이름 알려주기.
+                AnnounceRoomName(client); //참가한애한테 방이름 알려주기.
                 SendRoomCount(); //참가에 따른 변경 인원 전달
 
 
@@ -161,8 +161,8 @@ namespace testTcp
             if (reqType == ReqRoomType.IDRegister)
             {
                 _claInfo.PID = _reqData[1];
-                AnnouceRoomMaster();
-                AnnouceParty();
+                AnnounceRoomMaster();
+                AnnounceParty();
             }
             else if (reqType == ReqRoomType.Chat)
             {
@@ -185,7 +185,7 @@ namespace testTcp
                  */
                 //서버에 기록된 룸유저의 레뒤 상태에 따라 값 반환할거
                 RecordGameReady(_reqData[1]); //레디 상태 기록하고 레디상태 전달
-                AnnouceReadyState();
+                AnnounceReadyState();
             }
             else if (reqType == ReqRoomType.Start)
             {
@@ -199,14 +199,14 @@ namespace testTcp
                 //섞고
                 ShuffleCard();
                 ShuffleUserOrder();
-                AnnouceUserOrder(); //섞은 차례 알려주고 
-                AnnouceCardArrange(); //카드 나눠주고
+                AnnounceUserOrder(); //섞은 차례 알려주고 
+                AnnounceCardArrange(); //카드 나눠주고
                 AnnounceTurnPlayer(); //누가시작인지 알려줌
             }
             else if (reqType == ReqRoomType.SelectCard)
             {
                 //1. 다른유저들에게 선택된 카드 공지
-                AnnouceSelectCardList(_reqData); //그럼 끝 클라에서 받아서 처리
+                AnnounceSelectCardList(_reqData); //그럼 끝 클라에서 받아서 처리
             }
             else if (reqType == ReqRoomType.PutDownCard)
             {
@@ -220,7 +220,7 @@ namespace testTcp
                 ChangeCardBelongings(_reqData);
 
                 //1. 다른유저들에게도 제출된 카드 공지
-                AnnoucePutDownCard(_reqData);
+                AnnouncePutDownCard(_reqData);
                 //2. 해당 유저가 모든 패를 털었는지 체크
                 if (CheckStageOver(_reqData) == false)
                 {
@@ -235,7 +235,7 @@ namespace testTcp
                 if (gameOver == false)
                 {
                     //아직 게임 오버가 아니라면
-                    AnnouceStageOver(); //스테이지 끝났다고 알리고
+                    AnnounceStageOver(); //스테이지 끝났다고 알리고
                     StartNexStage(); //다음 스테이지 준비
                     return;
                 }
@@ -437,7 +437,7 @@ namespace testTcp
                 //섞고
                 ShuffleCard();
                 //ShuffleUserOrder(); //스테이지 시작시엔 차례 섞기 안함
-                AnnouceCardArrange();
+                AnnounceCardArrange();
                 AnnounceTurnPlayer();
             });
 
@@ -466,7 +466,7 @@ namespace testTcp
         private void GameOver()
         {
             ColorConsole.ConsoleColor("게임 오버");
-            AnnouceGameOver();
+            AnnounceGameOver();
             InitGameSetting();
         }
         #endregion
@@ -503,8 +503,8 @@ namespace testTcp
                                 roomUser.RemoveAt(x);
 
                                 Console.WriteLine(numbering + "소켓 제거 유저 남은 수 " + roomUser.Count);
-                                AnnouceRoomMaster();
-                                AnnouceParty();
+                                AnnounceRoomMaster();
+                                AnnounceParty();
                                 SendRoomCount(); //유저 나감에 따른 수치 변경
 
                                 //나간 아이디가 아직 손님상태인경우 제외
@@ -570,12 +570,12 @@ namespace testTcp
             AddRemoveSokect(_exitID);
         }
 
-        private void AnnouceReadyState()
+        private void AnnounceReadyState()
         {
             //플레이어 준비 상태 전달하기
         }
 
-        private void AnnouceUserOrder()
+        private void AnnounceUserOrder()
         {
             //플레이어 차례 알려주기
             List<byte> userOrderList = new List<byte>();
@@ -602,7 +602,7 @@ namespace testTcp
             SendMessege(userOrderList.ToArray());
         }
 
-        private void AnnouceCardArrange()
+        private void AnnounceCardArrange()
         {
             int useCardCount = roomUser.Count * 13; //나눠줄 카드 수
             for (int i = useCardCount; i < cards.Length; i++)
@@ -676,7 +676,7 @@ namespace testTcp
             return startValue + _cardNum - 1; //시작 값에서 카드 자신의 넘버 (1부터시작하는거)
         }
 
-        private void AnnouceParty()
+        private void AnnounceParty()
         {
             ColorConsole.ConsoleColor("유저 방 참가를 알려줌");
             /*
@@ -714,7 +714,7 @@ namespace testTcp
             SendMessege(turnData);
         }
 
-        private void AnnouceSelectCardList(byte[] _selectCardData)
+        private void AnnounceSelectCardList(byte[] _selectCardData)
         {
             /*
              * [0] 요청 코드 putdownCard
@@ -824,7 +824,7 @@ namespace testTcp
             SendMessege(cardByte, userIndex);
         }
 
-        private void AnnoucePutDownCard(byte[] _putDownCardData)
+        private void AnnouncePutDownCard(byte[] _putDownCardData)
         {
             /*
               * [0] 요청 코드 putdownCard
@@ -850,7 +850,7 @@ namespace testTcp
             turnId = roomUser[(turnIndex + 1) % roomUser.Count].PID;
         }
 
-        private void AnnouceStageOver()
+        private void AnnounceStageOver()
         {
             /*
              * [0] 응답코드 스테이지오버
@@ -878,7 +878,7 @@ namespace testTcp
             SendMessege(announceData);
         }
 
-        private void AnnouceGameOver()
+        private void AnnounceGameOver()
         {
             //게임 오버시 전달할것들
             roomUser.Sort((a, b) => a.BadPoint.CompareTo(b.BadPoint)); //벌점 오름순으로 정렬
@@ -911,7 +911,7 @@ namespace testTcp
             roomMasterId = roomUser[0].PID;
         }
 
-        private void AnnouceRoomMaster()
+        private void AnnounceRoomMaster()
         {
             /*
              * [0] 응답 코드 룸마스터
@@ -927,7 +927,7 @@ namespace testTcp
             SendMessege(roomMasterData);
         }
 
-        private void AnnouceRoomName(Socket _acceptClient)
+        private void AnnounceRoomName(Socket _acceptClient)
         {
             byte[] nameByte = Encoding.Unicode.GetBytes(roomName);
             byte[] namePacket = new byte[1 + nameByte.Length];
