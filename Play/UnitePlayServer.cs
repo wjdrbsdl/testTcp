@@ -620,10 +620,10 @@ namespace testTcp
              * [0] 응답코드 PartyIDes,
              * [1] ID를 받은 유효한 파티원 수
              * [2] 각 파티원 정보 길이
-             * [3] 0번 파티원부터 정보 입력
+             * [3] 0번 파티원부터 정보 입력 - pid,id
              */
             List<byte> partyData = new();
-            int partyInfoLength = 1; //일단 id값만 넘기기 때문에 임시로 1개
+            int partyInfoLength = 2; //일단 id값만 넘기기 때문에 임시로 1개
             partyData.Add((byte)ReqRoomType.PartyData);
             partyData.Add((byte)roomUser.Count); //일단 모든 파티원 수 담아놓음
             partyData.Add((byte)partyInfoLength);
@@ -633,7 +633,10 @@ namespace testTcp
                 if (roomUser[i].ID != 0)
                 {
                     valid += 1;
-                    partyData.Add((byte)roomUser[i].ID);
+                    byte pid = (byte)roomUser[i].ID; //식별번호 
+                    partyData.Add(pid);
+                    partyData.Add((byte)roomUser[i].ID); //고유 스트링이 될꺼
+                    
                 }
             }
             partyData[1] = valid; //아이디가 밝혀진 애들로 수 조절해서 전달
