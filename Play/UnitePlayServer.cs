@@ -163,6 +163,7 @@ namespace testTcp
                 _claInfo.PID = _reqData[1];
                 AnnounceRoomMaster();
                 AnnounceParty();
+                AnnounceReadyState();
             }
             else if (reqType == ReqRoomType.Chat)
             {
