@@ -201,12 +201,13 @@ namespace testTcp
                 if(allReady == false)
                 {
                     return;
-                    Console.WriteLine("준비 아닌 유저있어서 진행 불가");
                 }
 
                 RoomState = RoomState.Play;
                 SendRoomStateToLobbyServer();
                 UserScoreReset(); //유저 점수 리셋
+                ResetReadyState(); //레뒤 상태 다 default
+                AnnounceReadyState(); //모두에게 레뒤 스테이트 전달
                 //섞고
                 ShuffleCard();
                 ShuffleUserOrder();
