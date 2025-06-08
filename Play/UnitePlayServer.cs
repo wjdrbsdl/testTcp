@@ -505,6 +505,8 @@ namespace testTcp
                                 Console.WriteLine(numbering + "소켓 제거 유저 남은 수 " + roomUser.Count);
                                 AnnounceRoomMaster();
                                 AnnounceParty();
+                                ResetReadyState();
+                                AnnounceReadyState();
                                 SendRoomCount(); //유저 나감에 따른 수치 변경
 
                                 //나간 아이디가 아직 손님상태인경우 제외
