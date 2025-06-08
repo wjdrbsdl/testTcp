@@ -131,7 +131,7 @@ namespace testTcp
                     if (recv == 0)
                     {
                         ClientInfo obj = (ClientInfo)ar.AsyncState;
-                        ExitClient((byte)obj.ID);
+                        ExitClient((byte)obj.PID);
                         return;
                     }
                 } while (rest >= 1);
@@ -148,7 +148,7 @@ namespace testTcp
             {
 
                 ClientInfo obj = (ClientInfo)ar.AsyncState;
-                ExitClient((byte)obj.ID);
+                ExitClient((byte)obj.PID);
             }
 
         }
@@ -160,13 +160,13 @@ namespace testTcp
 
             if (reqType == ReqRoomType.IDRegister)
             {
-                _claInfo.ID = _reqData[1];
+                _claInfo.PID = _reqData[1];
                 AnnouceRoomMaster();
                 AnnouceParty();
             }
             else if (reqType == ReqRoomType.Chat)
             {
-                SendChat(_reqData, _claInfo.ID);
+                SendChat(_reqData, _claInfo.PID);
             }
             else if (reqType == ReqRoomType.RoomOut)
             {
@@ -176,6 +176,16 @@ namespace testTcp
                  */
                 ExitClient(_reqData[1]);
 
+            }
+            else if(reqType == ReqRoomType.Ready)
+            {
+                /*레디 데이터
+                 * [0] 요구코드 ready
+                 * [1] 요구한 pid
+                 */
+                //서버에 기록된 룸유저의 레뒤 상태에 따라 값 반환할거
+                RecordGameReady(_reqData[1]); //레디 상태 기록하고 레디상태 전달
+                AnnouceReadyState();
             }
             else if (reqType == ReqRoomType.Start)
             {
@@ -285,7 +295,7 @@ namespace testTcp
             //제출했던 유저 아이디
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID == _putDownCardData[1])
+                if (roomUser[i].PID == _putDownCardData[1])
                 {
                     roomUser[i].HaveCard -= _putDownCardData[2];
 
@@ -297,6 +307,54 @@ namespace testTcp
                 }
             }
             return false;
+        }
+        #endregion
+
+        #region 게임준비
+        private void ResetReadyState()
+        {
+            //다 레뒤 푼상태로 전환
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                roomUser[i].IsReady = false;
+            }
+        }
+
+        private void RecordGameReady(int _pid)
+        {
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if(roomUser[i].PID == _pid)
+                {
+                    roomUser[i].IsReady = !roomUser[i].IsReady;
+                    break;
+                }
+            }
+        }
+
+        private bool IsAllReady(int _roomMasterPid)
+        {
+            if(roomMasterId != _roomMasterPid)
+            {
+                //만약 요청한 아이디가 방장이 아니면 패스
+                return false;
+            }
+
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].PID == _roomMasterPid)
+                {
+                    //방장은 신경안씀
+                    continue;
+                }
+                if (roomUser[i].IsReady == false)
+                {
+                    //한명의 유저라도 준비 안되있으면 레디 안한거
+                    return false;
+                }
+            }
+
+            return true;
         }
         #endregion
 
@@ -341,7 +399,7 @@ namespace testTcp
             string turn = "";
             for (int i = 0; i < roomUser.Count; i++)
             {
-                turn += roomUser[i].ID + " ";
+                turn += roomUser[i].PID + " ";
             }
             ColorConsole.ConsoleColor("순서 " + turn);
         }
@@ -437,7 +495,7 @@ namespace testTcp
                         int numbering = removeQueue.Dequeue();
                         for (int x = 0; x < roomUser.Count; x++)
                         {
-                            if (numbering == roomUser[x].ID)
+                            if (numbering == roomUser[x].PID)
                             {
 
                                 roomUser[x].workingSocket.Close();
@@ -489,7 +547,7 @@ namespace testTcp
         {
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID == _receiveNumbering)
+                if (roomUser[i].PID == _receiveNumbering)
                 {
                     msg[1] = (byte)' ';
                 }
@@ -512,6 +570,11 @@ namespace testTcp
             AddRemoveSokect(_exitID);
         }
 
+        private void AnnouceReadyState()
+        {
+            //플레이어 준비 상태 전달하기
+        }
+
         private void AnnouceUserOrder()
         {
             //플레이어 차례 알려주기
@@ -526,7 +589,7 @@ namespace testTcp
             userOrderList.Add((byte)roomUser.Count); //
             for (int i = 0; i < roomUser.Count; i++)
             {
-                string id = roomUser[i].ID.ToString();
+                string id = roomUser[i].PID.ToString();
 
                 byte[] idBytes = Encoding.Unicode.GetBytes(id);
                 byte idLength = (byte)idBytes.Length;
@@ -577,7 +640,7 @@ namespace testTcp
                  * [1] 카드 숫자
                  */
                 //13장씩
-                int userId = roomUser[userIndex].ID; //카드 받을 유저
+                int userId = roomUser[userIndex].PID; //카드 받을 유저
                 for (int cardCount = 1; cardCount <= 13; cardCount++)
                 {
                     CardData selectCard = cards[giveCardIndex];
@@ -630,12 +693,12 @@ namespace testTcp
             byte valid = 0;
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID != 0)
+                if (roomUser[i].PID != 0)
                 {
                     valid += 1;
-                    byte pid = (byte)roomUser[i].ID; //식별번호 
+                    byte pid = (byte)roomUser[i].PID; //식별번호 
                     partyData.Add(pid);
-                    partyData.Add((byte)roomUser[i].ID); //고유 스트링이 될꺼
+                    partyData.Add((byte)roomUser[i].PID); //고유 스트링이 될꺼
                     
                 }
             }
@@ -666,7 +729,7 @@ namespace testTcp
 
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID == _selectCardData[1])
+                if (roomUser[i].PID == _selectCardData[1])
                 {
                     continue;
                 }
@@ -746,7 +809,7 @@ namespace testTcp
             int userIndex = -1;
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID == _userId)
+                if (roomUser[i].PID == _userId)
                 {
                     userIndex = i;
                     break;
@@ -776,7 +839,7 @@ namespace testTcp
             int turnIndex = 0;
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if (roomUser[i].ID == _putDownCardData[1])
+                if (roomUser[i].PID == _putDownCardData[1])
                 {
                     //제출한 녀석을 찾아서
                     turnIndex = i; //얘 차례 인덱스 뽑고
@@ -784,7 +847,7 @@ namespace testTcp
             }
             SendMessege(_putDownCardData);
             //현재 차례였던애 turnIndex;
-            turnId = roomUser[(turnIndex + 1) % roomUser.Count].ID;
+            turnId = roomUser[(turnIndex + 1) % roomUser.Count].PID;
         }
 
         private void AnnouceStageOver()
@@ -802,7 +865,7 @@ namespace testTcp
             //사람이 나가서 AI로 해도 roomuser는 4명으로?
             for (int i = 0; i < roomUser.Count; i++)
             {
-                stageOver.Add((byte)roomUser[i].ID);
+                stageOver.Add((byte)roomUser[i].PID);
                 int haveCard = roomUser[i].HaveCard;
                 if (haveCard <= SAFE_HAVE_COUNT)
                 {
@@ -832,7 +895,7 @@ namespace testTcp
             overDate.Add(2); //보낼 데이터 길이
             for (int i = 0; i < roomUser.Count; i++)
             {
-                overDate.Add((byte)roomUser[i].ID);
+                overDate.Add((byte)roomUser[i].PID);
                 overDate.Add((byte)roomUser[i].BadPoint);
             }
             SendMessege(overDate.ToArray());
@@ -845,7 +908,7 @@ namespace testTcp
                 return;
             }
 
-            roomMasterId = roomUser[0].ID;
+            roomMasterId = roomUser[0].PID;
         }
 
         private void AnnouceRoomMaster()
