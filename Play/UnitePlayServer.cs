@@ -441,12 +441,12 @@ namespace testTcp
                     {
                         if (confirmStagePlayer.IndexOf(id) == -1)
                         {
-                            ColorConsole.ConsoleColor(id + "준비 확인");
+                            //ColorConsole.ConsoleColor(id + "준비 확인");
                             confirmStagePlayer.Add(id);
                         }
                     }
                 }
-                ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
+               // ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
                 //섞고
                 ShuffleCard();
                 //ShuffleUserOrder(); //스테이지 시작시엔 차례 섞기 안함
