@@ -199,7 +199,7 @@ public class UniteServer
     {
         string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
 
-        ColorConsole.ConsoleColor("신청한 방이름 : " + roomName);
+        //ColorConsole.ConsoleColor("신청한 방이름 : " + roomName);
 
         IPAddress roomServerIP = ((IPEndPoint)_obj.WorkingSocket.RemoteEndPoint).Address;
         /*
@@ -387,7 +387,7 @@ public class UniteServer
                         connectedClientList[x].WorkingSocket.Dispose();
 
                         connectedClientList.RemoveAt(x);
-                        Console.WriteLine(numbering + "소켓 제거 남은 수 " + connectedClientList.Count);
+                        Console.WriteLine(numbering + "로비 소켓 제거 남은 수 " + connectedClientList.Count);
                         break;
                     }
                 }
