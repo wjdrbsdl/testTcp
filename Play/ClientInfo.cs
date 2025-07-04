@@ -23,5 +23,13 @@ public class ClientInfo
         BadPoint = 0;
     }
 
+    public void SetSocket(Socket newSock)
+    {
+        workingSocket?.Shutdown(SocketShutdown.Both);
+        workingSocket?.Close();
+        workingSocket?.Dispose();
+
+        workingSocket = newSock;
+    }
 }
 
