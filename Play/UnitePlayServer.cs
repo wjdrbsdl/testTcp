@@ -126,7 +126,6 @@ namespace testTcp
 
                 HandleReq(ref cla, recvData);
 
-
                 //obj.ClearBuffer();
                 if (cla.workingSocket.Connected)
                     cla.workingSocket.BeginReceive(cla.buffer, 0, cla.buffer.Length, 0, DataReceived, cla);
@@ -134,9 +133,21 @@ namespace testTcp
             }
             catch
             {
-
                 ClientInfo obj = (ClientInfo)ar.AsyncState;
-                ExitClient(obj.PID);
+                for (int i = 0; i < roomUser.Count; i++)
+                {
+                    if(obj.PID == roomUser[i].PID)
+                    {
+                        ColorConsole.ConsoleColor($"기존 소켓 넘버 {obj.socketNumber} 현재 소켓 넘버 {roomUser[i].socketNumber}");
+                        if(obj.socketNumber != roomUser[i].socketNumber)
+                        {
+                            ColorConsole.ConsoleColor($"다른 소켓으로 갈아낀 유저 정상 진행중이므로 예외처리 끝");
+                            return;
+                        }
+                    }
+                }
+                ColorConsole.ConsoleColor("리시브실패로 나가기 요청" + obj.PID+ "소켓 넘버 "+obj.socketNumber);
+                ExitClient(obj.PID); //리시브 실패 나가기
             }
 
         }
@@ -147,7 +158,7 @@ namespace testTcp
         {
             //클라이언트의 재접속을 대기해본다 
             //해당 소켓연결은 끊는게 맞고, 아이디와 이 정보를 남겨두는거 
-            //Console.WriteLine(client.PID+"번 아이디 대기 리스트에 추가");
+            Console.WriteLine(client.PID+"번 아이디 대기 리스트에 추가");
             if(waitIdDict.ContainsKey(client.PID) == false)
             {
              //   Console.WriteLine(client.PID + "번 새로");
@@ -159,7 +170,6 @@ namespace testTcp
                 waitIdDict[client.PID] = 3f;
             }
           }
-
 
         private void UpdateWaitTime()
         {
@@ -190,7 +200,7 @@ namespace testTcp
                     {
                         Console.WriteLine($"[재접속 실패] PID {pid}, 강제 퇴장");
                         waitIdDict.Remove(pid);
-                        ExitClient(pid); // 유저 제거 로직
+                        ExitClient(pid); //재접속 실패 나가기
                     }
                 }
             });
@@ -204,6 +214,8 @@ namespace testTcp
             if (reqType == ReqRoomType.IDRegister)
             {
                 int clientPid = _reqData[1];
+                bool isNew = true;
+                Console.WriteLine($"클라 아이디 {clientPid} 소켓넘버 {_claInfo.socketNumber} ");
                 if(waitIdDict.ContainsKey(clientPid) == true)
                 {
                     //이미 존재하던 아이디라면
@@ -213,42 +225,71 @@ namespace testTcp
                         if(roomUser[i].PID == clientPid)
                         {
                             Console.WriteLine(clientPid + "의 재접속을 확인");
-                            roomUser[i].SetSocket(_claInfo.workingSocket); //새로 연결된 소켓을 기존 소켓에서 대체
-                            _claInfo = roomUser[i]; //새로 생성된 클라 객체 참조를 기존 객체를 가리키기
+                            roomUser[i].Dispose(); //새로 연결된 소켓을 기존 소켓에서 대체
+                            _claInfo.CopyValue(roomUser[i]);
+                            roomUser[i] = _claInfo;
                             break;
                         }
                     }
 
                     waitIdDict.Remove(clientPid);
-                    Console.WriteLine("룸 인원 다시 옴" + roomUser.Count);
+                    Console.WriteLine("룸 인원 다시 옴" + roomUser.Count + "소켓 넘버 "+_claInfo.socketNumber);
                 }
                 else
                 {
                     //새로 추가 되는 경우
-                    if (isOpen == false)
+                    
+                    for (int i = 0; i < roomUser.Count; i++)
                     {
-                        ColorConsole.ConsoleColor("룸 닫힘");
-                        ReqRoomJoinFail(_claInfo.workingSocket);
-                        return;
+                        //나간걸 감지 하지 못한 상태에서 재접속이 일어난 경우 waitList엔 존재하지 않을수도있음.
+                        if (roomUser[i].PID == clientPid)
+                        {
+                            Console.WriteLine(clientPid + "의 재접속을 확인");
+                            roomUser[i].Dispose(); //새로 연결된 소켓을 기존 소켓에서 대체
+                            _claInfo.CopyValue(roomUser[i]);
+                            roomUser[i] = _claInfo; 
+                            isNew = false;
+                            break;
+                        }
                     }
-                    if (roomUser.Count == RoomData.maxCount)
+                    if(isNew == true)
                     {
-                        ColorConsole.ConsoleColor("룸 꽉참");
-                        ReqRoomJoinFail(_claInfo.workingSocket);
-                        return;
+                        if (isOpen == false)
+                        {
+                            ColorConsole.ConsoleColor("룸 닫힘");
+                            ReqRoomJoinFail(_claInfo.workingSocket);
+                            return;
+                        }
+                        if (roomUser.Count == RoomData.maxCount)
+                        {
+                            ColorConsole.ConsoleColor("룸 꽉참");
+                            ReqRoomJoinFail(_claInfo.workingSocket);
+                            return;
+                        }
+
+                        _claInfo.PID = clientPid;
+                        roomUser.Add(_claInfo);
+                        Console.WriteLine(clientPid + "번 유저 룸 인원 새로 받음" + roomUser.Count + "소켓 넘버 " + _claInfo.socketNumber);
+              
                     }
-
-                    _claInfo.PID = clientPid;
-                    roomUser.Add(_claInfo);
-
-                    Console.WriteLine(clientPid+ "번 유저 룸 인원 새로 받음" +roomUser.Count);
+                
                     SendRoomCount(); //참가에 따른 변경 인원 전달
                 }
-                AnnounceRoomMaster();
-                AnnounceParty();
-                AnnounceReadyState();
-                //게임 중이였다면
-                //새로 들어온 유저에겐 현재 게임의 진행 상황도 다시 알려줘야한다. 
+
+                if (RoomState == RoomState.Ready)
+                {
+                    //새로 유저가 들어온거라면 게임 준비를 위한 세팅
+                    AnnounceRoomMaster();
+                    AnnounceParty();
+                    AnnounceReadyState();
+                }
+                else if (RoomState == RoomState.Play)
+                {
+                    //진행 중에 재접속한거라면 현재 게임 상황을 전달해줘야하는데 
+                    //누구차례인지
+                    //전에 낸 카드는 무엇인지
+                    //벌점은 다들 어떻게 되는지
+                }
             }
             else if (reqType == ReqRoomType.Chat)
             {
@@ -260,7 +301,8 @@ namespace testTcp
                  * [0] 요구코드 RoomOut
                  * [1] 나가려는 아이디
                  */
-                ExitClient(_reqData[1]);
+                ColorConsole.ConsoleColor("정상적 방나가기 요청에 대응 " + _reqData[1]);
+                ExitClient(_reqData[1]); //나가기 요청 대응
 
             }
             else if(reqType == ReqRoomType.Ready)
