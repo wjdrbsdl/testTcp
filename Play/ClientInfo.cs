@@ -13,6 +13,7 @@ public class ClientInfo
     public int BadPoint = 0;
     public bool IsReady = false;
     public bool IsOut = false; //정상적으로 나가길 요청했는지
+    public bool IsAlive = true;
 
     public ClientInfo(int _bufferSize, Socket _claSocket)
     {
@@ -43,6 +44,7 @@ public class ClientInfo
         BadPoint = info.BadPoint;
         IsReady = info.IsReady;
         IsOut = info.IsOut;
+        IsAlive = info.IsAlive; //서버 소켓 생존여부
     }
 }
 

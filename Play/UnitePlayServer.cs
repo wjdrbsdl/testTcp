@@ -67,6 +67,7 @@ namespace testTcp
             MakeCards(); //
             UpdateRemoveSockect();
             UpdateWaitTime();
+            CheckAlive();
             linkSocket.BeginAccept(AcceptCallBack, null);
         }
 
@@ -125,6 +126,7 @@ namespace testTcp
                 } while (rest >= 1);
 
                 HandleReq(ref cla, recvData);
+                UpdateAlive(cla.PID);
 
                 //obj.ClearBuffer();
                 if (cla.workingSocket.Connected)
@@ -136,17 +138,17 @@ namespace testTcp
                 ClientInfo obj = (ClientInfo)ar.AsyncState;
                 for (int i = 0; i < roomUser.Count; i++)
                 {
-                    if(obj.PID == roomUser[i].PID)
+                    if (obj.PID == roomUser[i].PID)
                     {
                         ColorConsole.ConsoleColor($"기존 소켓 넘버 {obj.socketNumber} 현재 소켓 넘버 {roomUser[i].socketNumber}");
-                        if(obj.socketNumber != roomUser[i].socketNumber)
+                        if (obj.socketNumber != roomUser[i].socketNumber)
                         {
                             ColorConsole.ConsoleColor($"다른 소켓으로 갈아낀 유저 정상 진행중이므로 예외처리 끝");
                             return;
                         }
                     }
                 }
-                ColorConsole.ConsoleColor("리시브실패로 나가기 요청" + obj.PID+ "소켓 넘버 "+obj.socketNumber);
+                ColorConsole.ConsoleColor("리시브실패로 나가기 요청" + obj.PID + "소켓 넘버 " + obj.socketNumber);
                 ExitClient(obj.PID); //리시브 실패 나가기
             }
 
@@ -158,23 +160,23 @@ namespace testTcp
         {
             //클라이언트의 재접속을 대기해본다 
             //해당 소켓연결은 끊는게 맞고, 아이디와 이 정보를 남겨두는거 
-            Console.WriteLine(client.PID+"번 아이디 대기 리스트에 추가");
+            Console.WriteLine(client.PID + "번 아이디 대기 리스트에 추가");
             if (client.IsOut)
             {
                 Console.WriteLine(client.PID + "번 이미 종료 처리된 아이디 대기리스트 추가 안함");
                 return;
             }
-            if(waitIdDict.ContainsKey(client.PID) == false)
+            if (waitIdDict.ContainsKey(client.PID) == false)
             {
-             //   Console.WriteLine(client.PID + "번 새로");
+                //   Console.WriteLine(client.PID + "번 새로");
                 waitIdDict.Add(client.PID, 3f);
             }
             else
             {
-             //   Console.WriteLine(client.PID + "번 시간 갱신");
+                //   Console.WriteLine(client.PID + "번 시간 갱신");
                 waitIdDict[client.PID] = 3f;
             }
-          }
+        }
 
         private void UpdateWaitTime()
         {
@@ -221,13 +223,13 @@ namespace testTcp
                 int clientPid = _reqData[1];
                 bool isNew = true;
                 Console.WriteLine($"클라 아이디 {clientPid} 소켓넘버 {_claInfo.socketNumber} ");
-                if(waitIdDict.ContainsKey(clientPid) == true)
+                if (waitIdDict.ContainsKey(clientPid) == true)
                 {
                     //이미 존재하던 아이디라면
                     //client Info데이터를 걔로 옮겨야하는데
                     for (int i = 0; i < roomUser.Count; i++)
                     {
-                        if(roomUser[i].PID == clientPid)
+                        if (roomUser[i].PID == clientPid)
                         {
                             Console.WriteLine(clientPid + "의 재접속을 확인");
                             roomUser[i].Dispose(); //새로 연결된 소켓을 기존 소켓에서 대체
@@ -238,12 +240,12 @@ namespace testTcp
                     }
 
                     waitIdDict.Remove(clientPid);
-                    Console.WriteLine("룸 인원 다시 옴" + roomUser.Count + "소켓 넘버 "+_claInfo.socketNumber);
+                    Console.WriteLine("룸 인원 다시 옴" + roomUser.Count + "소켓 넘버 " + _claInfo.socketNumber);
                 }
                 else
                 {
                     //새로 추가 되는 경우
-                    
+
                     for (int i = 0; i < roomUser.Count; i++)
                     {
                         //나간걸 감지 하지 못한 상태에서 재접속이 일어난 경우 waitList엔 존재하지 않을수도있음.
@@ -258,12 +260,12 @@ namespace testTcp
                                 return;
                             }
                             _claInfo.CopyValue(roomUser[i]);
-                            roomUser[i] = _claInfo; 
+                            roomUser[i] = _claInfo;
                             isNew = false;
                             break;
                         }
                     }
-                    if(isNew == true)
+                    if (isNew == true)
                     {
                         if (isOpen == false)
                         {
@@ -281,9 +283,9 @@ namespace testTcp
                         _claInfo.PID = clientPid;
                         roomUser.Add(_claInfo);
                         Console.WriteLine(clientPid + "번 유저 룸 인원 새로 받음" + roomUser.Count + "소켓 넘버 " + _claInfo.socketNumber);
-              
+
                     }
-                
+
                     SendRoomCount(); //참가에 따른 변경 인원 전달
                 }
 
@@ -317,7 +319,7 @@ namespace testTcp
                 ExitClient(_reqData[1]); //나가기 요청 대응
 
             }
-            else if(reqType == ReqRoomType.Ready)
+            else if (reqType == ReqRoomType.Ready)
             {
                 /*레디 데이터
                  * [0] 요구코드 ready
@@ -338,7 +340,7 @@ namespace testTcp
                  * [1] 요구한 pid
                  */
                 bool allReady = IsAllReady(_reqData[1]);
-                if(allReady == false)
+                if (allReady == false)
                 {
                     return;
                 }
@@ -476,7 +478,7 @@ namespace testTcp
         {
             for (int i = 0; i < roomUser.Count; i++)
             {
-                if(roomUser[i].PID == _pid)
+                if (roomUser[i].PID == _pid)
                 {
                     roomUser[i].IsReady = !roomUser[i].IsReady;
                     break;
@@ -486,7 +488,7 @@ namespace testTcp
 
         private bool IsAllReady(int _roomMasterPid)
         {
-            if(roomMasterId != _roomMasterPid)
+            if (roomMasterId != _roomMasterPid)
             {
                 //만약 요청한 아이디가 방장이 아니면 패스
                 return false;
@@ -585,7 +587,7 @@ namespace testTcp
                         }
                     }
                 }
-               // ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
+                // ColorConsole.ConsoleColor(curUserCount + "명의 준비 확인 다음 스테이지 시작");
                 //섞고
                 ShuffleCard();
                 //ShuffleUserOrder(); //스테이지 시작시엔 차례 섞기 안함
@@ -620,6 +622,60 @@ namespace testTcp
             ColorConsole.ConsoleColor("게임 오버");
             AnnounceGameOver();
             InitGameSetting();
+        }
+        #endregion
+
+        #region 생존 확인
+        /// <summary>
+        /// 해당 소켓이 살아있는지 주기적으로 체크
+        /// </summary>
+        private void CheckAlive()
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(10000);
+                    Console.WriteLine(  "10초마다 생존 체크");
+                    if (isOpen == false)
+                    {
+                        ColorConsole.Default("방 서버 테스크 종료 생존 체크 그만");
+                        return;
+                    }
+                    for (int i = 0; i < roomUser.Count; i++)
+                    {
+                        if (roomUser[i].IsAlive == false)
+                        {
+                            //주기동안 생존신고가 안되었다면 퇴출
+                            ExitClient(roomUser[i].PID);
+                        }
+                        else
+                        {
+                            //생존 신고 확인 되었으면 다시 초기화
+                            roomUser[i].IsAlive = false;
+                        }
+                    }
+                }
+            });
+        }
+
+        private void UpdateAlive(int id)
+        {
+            //생존 신고의 핑퐁에만 해야할까 모든 요청에 해야할까 
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].PID == id)
+                {
+                    if (roomUser[i].IsOut)
+                    {
+                        //이미 아웃처리된 녀석이면 그냥 종료
+                        break;
+                    }
+                    roomUser[i].IsAlive = true; //아니면 생존 변환
+                    //주기동안 생존신고가 안되었다면 퇴출
+                    break;
+                }
+            }
         }
         #endregion
 
@@ -721,6 +777,11 @@ namespace testTcp
 
         private void ExitClient(int _exitID)
         {
+            if(_exitID == 0)
+            {
+                //무효한 아이디는 작업 안함
+                return;
+            }
             ColorConsole.ConsoleColor($"{_exitID}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
             for (int i = 0; i < roomUser.Count; i++)
             {
@@ -882,7 +943,7 @@ namespace testTcp
                     byte pid = (byte)roomUser[i].PID; //식별번호 
                     partyData.Add(pid);
                     partyData.Add((byte)roomUser[i].PID); //고유 스트링이 될꺼
-                    
+
                 }
             }
             partyData[1] = valid; //아이디가 밝혀진 애들로 수 조절해서 전달
