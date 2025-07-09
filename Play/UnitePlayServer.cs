@@ -159,6 +159,11 @@ namespace testTcp
             //클라이언트의 재접속을 대기해본다 
             //해당 소켓연결은 끊는게 맞고, 아이디와 이 정보를 남겨두는거 
             Console.WriteLine(client.PID+"번 아이디 대기 리스트에 추가");
+            if (client.IsOut)
+            {
+                Console.WriteLine(client.PID + "번 이미 종료 처리된 아이디 대기리스트 추가 안함");
+                return;
+            }
             if(waitIdDict.ContainsKey(client.PID) == false)
             {
              //   Console.WriteLine(client.PID + "번 새로");
@@ -246,6 +251,12 @@ namespace testTcp
                         {
                             Console.WriteLine(clientPid + "의 재접속을 확인");
                             roomUser[i].Dispose(); //새로 연결된 소켓을 기존 소켓에서 대체
+                            if (roomUser[i].IsOut)
+                            {
+                                //이미 exit로 넘어간 상태라면 쫓아냄
+                                ReqRoomJoinFail(_claInfo.workingSocket);
+                                return;
+                            }
                             _claInfo.CopyValue(roomUser[i]);
                             roomUser[i] = _claInfo; 
                             isNew = false;
@@ -302,6 +313,7 @@ namespace testTcp
                  * [1] 나가려는 아이디
                  */
                 ColorConsole.ConsoleColor("정상적 방나가기 요청에 대응 " + _reqData[1]);
+
                 ExitClient(_reqData[1]); //나가기 요청 대응
 
             }
@@ -710,6 +722,14 @@ namespace testTcp
         private void ExitClient(int _exitID)
         {
             ColorConsole.ConsoleColor($"{_exitID}번 아이디가 나가길 요청 현재인원 :" + roomUser.Count);
+            for (int i = 0; i < roomUser.Count; i++)
+            {
+                if (roomUser[i].PID == _exitID)
+                {
+                    roomUser[i].IsOut = true;
+                    break;
+                }
+            }
             AddRemoveSokect(_exitID);
         }
 

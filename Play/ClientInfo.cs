@@ -12,6 +12,7 @@ public class ClientInfo
     public int HaveCard = 0;
     public int BadPoint = 0;
     public bool IsReady = false;
+    public bool IsOut = false; //정상적으로 나가길 요청했는지
 
     public ClientInfo(int _bufferSize, Socket _claSocket)
     {
@@ -41,6 +42,7 @@ public class ClientInfo
         HaveCard = info.HaveCard;
         BadPoint = info.BadPoint;
         IsReady = info.IsReady;
+        IsOut = info.IsOut;
     }
 }
 
