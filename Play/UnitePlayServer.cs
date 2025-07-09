@@ -17,7 +17,8 @@ namespace testTcp
         StageReady, StageOver, GameOver,
         ReqGameOver, ResRoomJoinFail,
         Draw, UserOrder,
-        InValidCard, ArrangeRoomMaster
+        InValidCard, ArrangeRoomMaster,
+        GameReadyState
 
     }
 
@@ -294,7 +295,8 @@ namespace testTcp
                     //새로 유저가 들어온거라면 게임 준비를 위한 세팅
                     AnnounceRoomMaster();
                     AnnounceParty();
-                    AnnounceReadyState();
+                    AnnouncePlayerReadyState(); //플레이어들 레디상황
+                    AnnouceGameReady(_claInfo.workingSocket); //현재 게임 준비상태라고 알려주기
                 }
                 else if (RoomState == RoomState.Play)
                 {
@@ -327,7 +329,7 @@ namespace testTcp
                  */
                 //서버에 기록된 룸유저의 레뒤 상태에 따라 값 반환할거
                 RecordGameReady(_reqData[1]); //레디 상태 기록하고 레디상태 전달
-                AnnounceReadyState();
+                AnnouncePlayerReadyState();
             }
             else if (reqType == ReqRoomType.Start)
             {
@@ -349,7 +351,7 @@ namespace testTcp
                 SendRoomStateToLobbyServer();
                 UserScoreReset(); //유저 점수 리셋
                 ResetReadyState(); //레뒤 상태 다 default
-                AnnounceReadyState(); //모두에게 레뒤 스테이트 전달
+                AnnouncePlayerReadyState(); //모두에게 레뒤 스테이트 전달
                 //섞고
                 ShuffleCard();
                 ShuffleUserOrder();
@@ -671,6 +673,7 @@ namespace testTcp
                         //이미 아웃처리된 녀석이면 그냥 종료
                         break;
                     }
+                    Console.WriteLine( id+"생존 갱신");
                     roomUser[i].IsAlive = true; //아니면 생존 변환
                     //주기동안 생존신고가 안되었다면 퇴출
                     break;
@@ -715,7 +718,7 @@ namespace testTcp
                                 AnnounceRoomMaster();
                                 AnnounceParty();
                                 ResetReadyState();
-                                AnnounceReadyState();
+                                AnnouncePlayerReadyState();
                                 SendRoomCount(); //유저 나감에 따른 수치 변경
 
                                 //나간 아이디가 아직 손님상태인경우 제외
@@ -794,7 +797,7 @@ namespace testTcp
             AddRemoveSokect(_exitID);
         }
 
-        private void AnnounceReadyState()
+        private void AnnouncePlayerReadyState()
         {
             //플레이어 준비 상태 전달하기
             /*
@@ -817,6 +820,19 @@ namespace testTcp
                 }
             }
             SendMessege(readyDate.ToArray());
+        }
+
+        private void AnnouceGameReady(Socket socket)
+        {
+            //플레이어 준비 상태 전달하기
+            /*
+             * [0] 코드
+             * [pid]
+             * [state = 0이면 false]
+             */
+            List<byte> readyDate = new();
+            readyDate.Add((byte)ReqRoomType.GameReadyState);
+            SendMessege(socket, readyDate.ToArray()); // id를 인덱스로 추려서 
         }
 
         private void AnnounceUserOrder()
