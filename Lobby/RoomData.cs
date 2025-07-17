@@ -59,14 +59,13 @@ public class RoomData
         roomState = _state;
     }
 
-    public void Enter()
+    public bool AbleJoin()
     {
-        curCount++;
-    }
-
-    public void Out()
-    {
-        curCount--;
+     if(roomState == RoomState.Play || curCount == RoomData.maxCount)
+        {
+            return false;
+        }
+        return true;
     }
 
     public byte[] GetRoomDataPacket()
