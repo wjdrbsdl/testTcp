@@ -9,7 +9,7 @@ using testTcp;
 
 public enum ReqLobbyType
 {
-    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber, RoomMakeFail, RoomList
+    RoomMake = 1, Close, RoomState, RoomUserCount, ClientNumber, RoomMakeFail, RoomList, RoomQuickMake
 }
 
 public class UniteServer
@@ -135,13 +135,17 @@ public class UniteServer
     {
         //
         ReqLobbyType reqType = (ReqLobbyType)_reqData[0];
-        if(reqType == ReqLobbyType.RoomList)
+        if (reqType == ReqLobbyType.RoomList)
         {
             ResRoomList(_obj);
         }
         else if (reqType == ReqLobbyType.RoomMake)
         {
             ResRoomMake(_obj, _reqData);
+        }
+        else if (reqType == ReqLobbyType.RoomQuickMake)
+        {
+            ResQuickMake(_obj);
         }
         else if (reqType == ReqLobbyType.Close)
         {
@@ -172,7 +176,7 @@ public class UniteServer
          * [0] 응답코드 방 리스트
          * [1] 방 리스트 수
          * [2] 방 정보들 나열
-         */
+        */
         List<byte[]> roomDatas = new List<byte[]>();
         int length = 0;
         foreach(KeyValuePair<string, RoomData> roomPair in roomList)
@@ -195,6 +199,41 @@ public class UniteServer
         SendData(_obj, roomDataPacket);
     }
 
+    int roomIndex = 1;
+    private void ResQuickMake(AsyncObject _obj)
+    {
+        //방이름이 빠른시작이면, 알아서 roomName 찾아서 반환하기 
+        //비동기로 들어오는 방 생성 요청에, 계속 방진입을 허용해버리면? 일단 여기서 방 숫자를 올려버릴까? 근데 올렸는데 거기 접속 못하고
+        //서버숫자도 갱신 안받으면 그 방은 그냥 터져야하는데 
+
+        string defaultName = "Quick";
+        string roomName = defaultName;
+        IPAddress roomServerIP = ((IPEndPoint)_obj.WorkingSocket.RemoteEndPoint).Address; //결국 서버 IP이긴한데, p2p 경우 대비해서 요청한자의 endPoint를 땀
+    
+        foreach (KeyValuePair<string, RoomData> roomPair in roomList)
+        {
+            if (roomPair.Value.AbleJoin() == true)
+            {
+                roomName = roomPair.Value.roomName;
+                break;
+            }
+        }
+
+        if(roomName == defaultName)
+        {
+            //새로운 이름으로 갱신해야함 
+            roomName += roomIndex.ToString();
+            roomIndex += 1;
+            RoomData createRoom = new RoomData(roomServerIP, roomPortStart, roomName);
+            roomList.Add(roomName, createRoom);
+            UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this, roomName);
+            playSever.Start();
+            roomPortStart += 8;
+        }
+
+        SendRoomData(roomName, _obj);
+    }
+
     private void ResRoomMake(AsyncObject _obj, byte[] _reqData)
     {
         string roomName = Encoding.Unicode.GetString(_reqData, 1, _reqData.Length - 1);
@@ -205,6 +244,7 @@ public class UniteServer
         /*
          * 방 만들기 리스폰스- 응답타입, 방참가 여부, 생성-참가 되었다면 참가자 수, 참가자 정보
          */
+   
         //최초 생성이면 로비 서버 데이터에 만들고
         if (roomList.ContainsKey(roomName) == false)
         {
@@ -212,11 +252,10 @@ public class UniteServer
             roomList.Add(roomName, createRoom);
             UnitePlayServer playSever = new UnitePlayServer(createRoom.portNum, this, roomName);
             playSever.Start();
-            roomPortStart++;
+            roomPortStart += 8;
         }
         //있으면 방 데이터에서 참가 여부 가져와서 반환하고
-        if (roomList[roomName].roomState == RoomState.Play ||
-            roomList[roomName].curCount == RoomData.maxCount)
+        if (roomList[roomName].AbleJoin() == false)
         {
             ColorConsole.ConsoleColor("방참가 불가 코드 발송");
             byte[] joinFailCode = new byte[] { (byte)ReqLobbyType.RoomMakeFail};
@@ -224,12 +263,17 @@ public class UniteServer
             return;
         }
 
+        SendRoomData(roomName, _obj);
+    }
+
+    private void SendRoomData(string roomName, AsyncObject _obj)
+    {
         //방 데이터 만들어놓고, 방 참가할 수 있도록 요청한 애 한테 정보 전달
         /*
          * [0] 응답 코드
          * [1] 룸데이터 패킷
          */
- 
+
         byte[] roomDataPacket = roomList[roomName].GetRoomDataPacket();
         byte[] finalRes = new byte[1 + roomDataPacket.Length];
         finalRes[0] = (byte)ReqLobbyType.RoomMake;
