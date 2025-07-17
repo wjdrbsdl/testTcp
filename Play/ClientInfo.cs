@@ -14,7 +14,7 @@ public class ClientInfo
     public bool IsReady = false;
     public bool IsOut = false; //정상적으로 나가길 요청했는지
     public bool IsAlive = true;
-
+    public int IsAdTimeCount = 0; //ad 타임이라 생존 신고 무효화 횟수
     public ClientInfo(int _bufferSize, Socket _claSocket)
     {
         buffer = new byte[_bufferSize];
@@ -45,6 +45,7 @@ public class ClientInfo
         IsReady = info.IsReady;
         IsOut = info.IsOut;
         IsAlive = info.IsAlive; //서버 소켓 생존여부
+        IsAdTimeCount = info.IsAdTimeCount;
     }
 }
 

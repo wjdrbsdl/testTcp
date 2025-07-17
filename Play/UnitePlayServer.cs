@@ -18,7 +18,7 @@ namespace testTcp
         ReqGameOver, ResRoomJoinFail,
         Draw, UserOrder,
         InValidCard, ArrangeRoomMaster,
-        GameReadyState
+        GameReadyState, AdStart, AdDone
 
     }
 
@@ -408,6 +408,18 @@ namespace testTcp
             {
                 GameOver();
             }
+            else if (reqType == ReqRoomType.AdStart)
+            {
+                //광고 본다고 알림왔으면 해당 녀석 타이머 아니 탈출 뭐 어떻게 한다?
+                _claInfo.IsAdTimeCount = 3;
+                Console.WriteLine(_claInfo.PID +"광고 보신단다");
+
+            }
+            else if(reqType == ReqRoomType.AdDone)
+            {
+                _claInfo.IsAdTimeCount = 0;
+                Console.WriteLine(_claInfo.PID + "광고 다 봤단다");
+            }
         }
 
 
@@ -646,6 +658,13 @@ namespace testTcp
                     }
                     for (int i = 0; i < roomUser.Count; i++)
                     {
+                        if (roomUser[i].IsAdTimeCount >=1)
+                        {
+                            roomUser[i].IsAdTimeCount -= 1; //목숨 1깎기
+                            Console.WriteLine(roomUser[i].PID +" 광고 보니까 생존 체크 넘어감 남은 횟수 " + roomUser[i].IsAdTimeCount);
+                            continue; //광고보는중이면 넘김
+                        }
+
                         if (roomUser[i].IsAlive == false)
                         {
                             //주기동안 생존신고가 안되었다면 퇴출
