@@ -293,10 +293,10 @@ namespace testTcp
                 if (RoomState == RoomState.Ready)
                 {
                     //새로 유저가 들어온거라면 게임 준비를 위한 세팅
+                    AnnouceGameReady(_claInfo.workingSocket); //현재 게임 준비상태라고 알려주기
                     AnnounceRoomMaster();
                     AnnounceParty();
                     AnnouncePlayerReadyState(); //플레이어들 레디상황
-                    AnnouceGameReady(_claInfo.workingSocket); //현재 게임 준비상태라고 알려주기
                 }
                 else if (RoomState == RoomState.Play)
                 {
